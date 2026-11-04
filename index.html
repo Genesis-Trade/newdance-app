@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Учет производства · New Dance</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    button, input, select {
+      -webkit-tap-highlight-color: transparent;
+    }
+    .hide-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .hide-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-[var(--background,#0f172a)] text-[var(--foreground,#f8fafc)] min-h-screen font-sans pb-28 antialiased selection:bg-amber-500 selection:text-black">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-40 bg-[var(--card,#1e293b)]/95 backdrop-blur border-b border-[var(--border,#334155)] px-4 py-3 shadow-md">
+    <div class="max-w-md mx-auto flex items-center justify-between">
+      <div class="flex items-center space-x-2.5">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-black font-black text-sm shadow">
+          ND
+        </div>
+        <div>
+          <h1 class="text-sm font-bold tracking-tight text-[var(--foreground,#f8fafc)] leading-tight">Швейный цех · New Dance</h1>
+          <p class="text-[12px] text-amber-400 font-medium flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+            Журнал выработки смены
+          </p>
+        </div>
+      </div>
+      <div class="text-right">
+        <span id="shiftDateBadge" class="text-xs bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] px-2.5 py-1 rounded-md text-[var(--muted-foreground,#94a3b8)] font-mono">
+          04.11.2026
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-md mx-auto px-4 py-3.5 space-y-3.5">
+
+    <!-- Seamstress Profile Card with Auto-Telegram detection -->
+    <div class="bg-[var(--card,#1e293b)] border border-[var(--border,#334155)] rounded-2xl p-3.5 shadow-sm space-y-3">
+      
+      <!-- Auto User Badge -->
+      <div class="flex items-center justify-between bg-[var(--background,#0f172a)] p-2.5 rounded-xl border border-[var(--border,#334155)]">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-8 h-8 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-xs border border-amber-500/30" id="userAvatar">
+            РЛ
+          </div>
+          <div>
+            <div class="text-[11px] text-[var(--muted-foreground,#94a3b8)] font-medium flex items-center gap-1">
+              <span>Мастер по Telegram:</span>
+              <span class="text-emerald-400 text-[10px]">● авто-вход</span>
+            </div>
+            <div class="text-sm font-bold text-white leading-tight" id="detectedMasterName">
+              Роговская Людмила Петровна
+            </div>
+          </div>
+        </div>
+        <button type="button" onclick="toggleManualMasterSelect()" class="text-[11px] text-amber-400 hover:text-amber-300 font-medium underline px-1 py-0.5">
+          Сменить
+        </button>
+      </div>
+
+      <!-- Fallback selector if multiple people use one device -->
+      <div id="manualMasterBlock" class="hidden pt-1">
+        <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground,#94a3b8)] mb-1">
+          Выбор мастера вручную:
+        </label>
+        <select id="seamstressSelect" onchange="onManualMasterChange()" class="w-full bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] text-sm rounded-xl px-3 py-2 text-[var(--foreground,#f8fafc)] focus:outline-none focus:border-amber-400 font-medium">
+          <option value="Роговская Людмила Петровна">Роговская Людмила Петровна</option>
+          <option value="Руднев Евгений Владимирович">Руднев Евгений Владимирович</option>
+          <option value="Сменная швея (цех)">Сменная швея (цех)</option>
+        </select>
+      </div>
+
+      <!-- Date Input (defaults to today) -->
+      <div class="pt-0.5">
+        <div class="flex items-center justify-between mb-1">
+          <label class="text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground,#94a3b8)]">
+            Дата рабочей смены
+          </label>
+          <span class="text-[11px] text-amber-400 font-medium" id="todayLabel">Сегодня</span>
+        </div>
+        <input type="date" id="shiftDateInput" value="2026-11-04" onchange="updateDateBadge(this.value)" class="w-full bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] text-sm rounded-xl px-3 py-2 text-[var(--foreground,#f8fafc)] focus:outline-none focus:border-amber-400 font-medium">
+      </div>
+
+      <!-- Operation Mode Selector (Пошив vs Раскрой) -->
+      <div>
+        <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground,#94a3b8)] mb-1.5">
+          Тип выполняемой работы
+        </label>
+        <div class="grid grid-cols-2 gap-2 bg-[var(--background,#0f172a)] p-1 rounded-xl border border-[var(--border,#334155)]">
+          <button type="button" onclick="setOpType('sewing')" id="op-sewing" class="py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 bg-emerald-500 text-black shadow">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            Пошив (Готово)
+          </button>
+          <button type="button" onclick="setOpType('cutting')" id="op-cutting" class="py-2 px-3 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5 text-[var(--muted-foreground,#94a3b8)] hover:text-white">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242L10.757 8.5M7 17l-4 4"></path></svg>
+            Раскрой (Крой)
+          </button>
+        </div>
+        <p id="opHintText" class="text-[11px] text-emerald-400/90 mt-1 pl-1">
+          🟢 Полностью готовые изделия (сдаются на склад)
+        </p>
+      </div>
+    </div>
+
+    <!-- Category Tabs (No Footwear) -->
+    <div class="grid grid-cols-4 gap-1 bg-[var(--card,#1e293b)] p-1 rounded-xl border border-[var(--border,#334155)]">
+      <button onclick="setCategory('clothes')" id="tab-clothes" class="py-2 text-xs font-bold rounded-lg transition-all bg-amber-500 text-black shadow">
+        Одежда (24)
+      </button>
+      <button onclick="setCategory('bags')" id="tab-bags" class="py-2 text-xs font-medium rounded-lg transition-all text-[var(--muted-foreground,#94a3b8)] hover:text-white">
+        Сумки (3)
+      </button>
+      <button onclick="setCategory('liners')" id="tab-liners" class="py-2 text-xs font-medium rounded-lg transition-all text-[var(--muted-foreground,#94a3b8)] hover:text-white">
+        Вкладыши
+      </button>
+      <button onclick="setCategory('accessories')" id="tab-accessories" class="py-2 text-xs font-medium rounded-lg transition-all text-[var(--muted-foreground,#94a3b8)] hover:text-white">
+        Аксессуары
+      </button>
+    </div>
+
+    <!-- Item Selection Section -->
+    <div class="bg-[var(--card,#1e293b)] border border-[var(--border,#334155)] rounded-2xl p-4 shadow-sm space-y-3.5">
+      
+      <!-- Quick Search / Filter Input -->
+      <div>
+        <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground,#94a3b8)] mb-1">
+          Поиск по изделиям
+        </label>
+        <div class="relative">
+          <input 
+            type="text" 
+            id="searchInput" 
+            placeholder="Быстрый поиск (купальник, шорты, болеро...)" 
+            oninput="handleSearch(this.value)"
+            class="w-full bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] text-sm rounded-xl pl-9 pr-3 py-2 text-[var(--foreground,#f8fafc)] placeholder-[var(--muted-foreground,#64748b)] focus:outline-none focus:border-amber-400"
+          >
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[var(--muted-foreground,#94a3b8)]">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Item Dropdown / Grid -->
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <label class="text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground,#94a3b8)]">
+            Модель изделия
+          </label>
+          <span id="itemsCountBadge" class="text-[11px] text-amber-400/90 font-mono">24 моделей</span>
+        </div>
+        <select id="itemSelect" class="w-full bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] text-sm rounded-xl px-3 py-2.5 text-[var(--foreground,#f8fafc)] focus:outline-none focus:border-amber-400 font-medium">
+          <!-- Populated by JS -->
+        </select>
+      </div>
+
+      <!-- Size Selector -->
+      <div>
+        <div class="flex items-center justify-between mb-1.5">
+          <label class="text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground,#94a3b8)]">
+            Размер
+          </label>
+          <span id="selectedSizeLabel" class="text-xs text-amber-400 font-mono font-bold">32</span>
+        </div>
+        <div id="sizeButtonsContainer" class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pr-1">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Quantity Selector -->
+      <div class="pt-1">
+        <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground,#94a3b8)] mb-1.5">
+          Количество за смену (шт)
+        </label>
+        <div class="flex items-center space-x-3">
+          <button type="button" onclick="adjustQty(-5)" class="w-10 h-10 rounded-xl bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] text-lg font-bold text-[var(--muted-foreground,#94a3b8)] hover:text-white flex items-center justify-center active:scale-95 transition">-5</button>
+          <button type="button" onclick="adjustQty(-1)" class="w-10 h-10 rounded-xl bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] text-lg font-bold text-[var(--muted-foreground,#94a3b8)] hover:text-white flex items-center justify-center active:scale-95 transition">-1</button>
+          <input type="number" id="qtyInput" value="1" min="1" class="flex-1 bg-[var(--background,#0f172a)] border border-amber-400/60 text-center text-xl font-black rounded-xl py-2 text-white focus:outline-none focus:ring-1 focus:ring-amber-400 font-mono">
+          <button type="button" onclick="adjustQty(1)" class="w-10 h-10 rounded-xl bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] text-lg font-bold text-[var(--muted-foreground,#94a3b8)] hover:text-white flex items-center justify-center active:scale-95 transition">+1</button>
+          <button type="button" onclick="adjustQty(5)" class="w-10 h-10 rounded-xl bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] text-lg font-bold text-[var(--muted-foreground,#94a3b8)] hover:text-white flex items-center justify-center active:scale-95 transition">+5</button>
+        </div>
+      </div>
+
+      <!-- Add to Shift Button -->
+      <button 
+        type="button" 
+        onclick="addItemToShift()" 
+        id="addBtn"
+        class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black font-extrabold text-sm shadow-lg shadow-emerald-500/20 active:scale-[0.99] transition flex items-center justify-center space-x-2"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+        <span id="addBtnText">+ Добавить в отчет (Пошив)</span>
+      </button>
+
+    </div>
+
+    <!-- Active Shift Summary Card -->
+    <div class="bg-[var(--card,#1e293b)] border border-[var(--border,#334155)] rounded-2xl p-4 shadow-sm space-y-3">
+      <div class="flex items-center justify-between border-b border-[var(--border,#334155)] pb-2.5">
+        <div>
+          <h2 class="text-sm font-bold text-white flex items-center gap-1.5">
+            <span>Выработка за смену</span>
+            <span id="shiftCountBadge" class="bg-amber-400/20 text-amber-300 text-xs px-2 py-0.5 rounded-full font-mono">0 поз.</span>
+          </h2>
+          <p class="text-[11px] text-[var(--muted-foreground,#94a3b8)]">
+            Пошив: <span id="summarySewingQty" class="text-emerald-400 font-bold">0 шт</span> · Раскрой: <span id="summaryCuttingQty" class="text-amber-400 font-bold">0 шт</span>
+          </p>
+        </div>
+        <button onclick="clearShift()" class="text-xs text-red-400 hover:text-red-300 font-medium">Очистить</button>
+      </div>
+
+      <!-- Shift Items List -->
+      <div id="shiftItemsList" class="space-y-2 max-h-56 overflow-y-auto pr-1">
+        <div class="text-center py-6 text-xs text-[var(--muted-foreground,#94a3b8)]">
+          В этой смене пока нет добавленных позиций.<br>Выберите изделие выше и нажмите «Добавить».
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Sticky Bottom Submit Bar -->
+  <div class="fixed bottom-0 inset-x-0 bg-[var(--card,#1e293b)]/95 backdrop-blur border-t border-[var(--border,#334155)] p-4 shadow-2xl z-40">
+    <div class="max-w-md mx-auto flex items-center justify-between space-x-4">
+      <div>
+        <div class="text-[11px] text-[var(--muted-foreground,#94a3b8)]">Итого за смену:</div>
+        <div class="text-lg font-black text-white font-mono flex items-center gap-1.5">
+          <span id="totalUnitsCount">0</span> <span class="text-xs font-normal text-[var(--muted-foreground,#94a3b8)]">изделий</span>
+        </div>
+      </div>
+      <button 
+        id="submitShiftBtn" 
+        onclick="submitShiftToTest()" 
+        disabled
+        class="flex-1 py-3 px-5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-sm transition shadow-lg shadow-amber-500/20 disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center space-x-2"
+      >
+        <span>Завершить смену</span>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Success Modal -->
+  <div id="successModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-[var(--card,#1e293b)] border border-[var(--border,#334155)] rounded-2xl max-w-sm w-full p-5 space-y-4 text-center shadow-2xl">
+      <div class="w-12 h-12 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto border border-emerald-500/40">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+      </div>
+      <div>
+        <h3 class="text-lg font-black text-white">Смена зафиксирована!</h3>
+        <p class="text-xs text-[var(--muted-foreground,#94a3b8)] mt-1" id="modalDocNumber">Выработка мастера успешно сохранена.</p>
+      </div>
+      <div class="bg-[var(--background,#0f172a)] rounded-xl p-3 border border-[var(--border,#334155)] text-left space-y-1.5 text-xs">
+        <div class="flex justify-between">
+          <span class="text-[var(--muted-foreground,#94a3b8)]">Мастер:</span>
+          <span class="text-white font-bold" id="modalSeamstress">Роговская Людмила Петровна</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-[var(--muted-foreground,#94a3b8)]">Отшито (готово):</span>
+          <span class="text-emerald-400 font-bold" id="modalSewingUnits">0 шт</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-[var(--muted-foreground,#94a3b8)]">Раскроено (крой):</span>
+          <span class="text-amber-400 font-bold" id="modalCuttingUnits">0 шт</span>
+        </div>
+      </div>
+      <button onclick="closeSuccessModal()" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-xl transition text-sm">
+        Начать новую смену
+      </button>
+    </div>
+  </div>
+
+  <script>
+    let activeMasterName = "Роговская Людмила Петровна";
+    let telegramUser = null;
+
+    // Initialize Telegram WebApp
+    if (window.Telegram && window.Telegram.WebApp) {
+      window.Telegram.WebApp.ready();
+      window.Telegram.WebApp.expand();
+
+      const tgUser = window.Telegram.WebApp.initDataUnsafe?.user;
+      if (tgUser) {
+        telegramUser = tgUser;
+        const tgName = ((tgUser.first_name || '') + ' ' + (tgUser.last_name || '')).trim();
+        if (tgName) {
+          if (tgName.toLowerCase().includes("руден")) {
+            activeMasterName = "Руднев Евгений Владимирович";
+          } else if (tgName.toLowerCase().includes("роговск")) {
+            activeMasterName = "Роговская Людмила Петровна";
+          } else {
+            activeMasterName = tgName;
+          }
+        }
+      }
+    }
+
+    function updateMasterProfileUI() {
+      document.getElementById('detectedMasterName').textContent = activeMasterName;
+      const initials = activeMasterName.split(' ').map(n => n[0]).slice(0, 2).join('');
+      document.getElementById('userAvatar').textContent = initials || 'ND';
+    }
+
+    function toggleManualMasterSelect() {
+      const block = document.getElementById('manualMasterBlock');
+      block.classList.toggle('hidden');
+    }
+
+    function onManualMasterChange() {
+      activeMasterName = document.getElementById('seamstressSelect').value;
+      updateMasterProfileUI();
+      document.getElementById('manualMasterBlock').classList.add('hidden');
+    }
+
+    function updateDateBadge(val) {
+      document.getElementById('shiftDateBadge').textContent = val.split('-').reverse().join('.');
+    }
+
+    // Exact catalog updated with user's new models
+    const catalog = {
+      clothes: {
+        sizes: [26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, "Разработка"],
+        defaultSize: 32,
+        items: [
+          // Новые позиции:
+          "Купальник на широких лямках черный",
+          "Купальник на широких лямках бордовый",
+          "Купальник-шорты",
+          "Болеро черное",
+          "Болеро бордовое",
+          "Шорты бордовые",
+          "Юбка-солнце шифон бордовая",
+          // Базовый ассортимент цеха:
+          "Юбка-солнце полиамид черная",
+          "Юбка-солнце полиамид белая",
+          "Юбка-солнце сетка черная",
+          "Юбка-солнце сетка белая",
+          "Юбка-платок",
+          "Юбка хитон черная",
+          "Юбка хитон белая",
+          "Футболка черная",
+          "Футболка белая",
+          "Легинсы со стременем",
+          "Легинсы классические",
+          "Капри",
+          "Велосипедки",
+          "Шорты облегающие",
+          "Шорты спортивные",
+          "Брюки спортивные",
+          "Брюки прямые"
+        ]
+      },
+      bags: {
+        sizes: ["Стандарт (One Size)", "S", "M", "L"],
+        defaultSize: "Стандарт (One Size)",
+        items: [
+          "Шоппер",
+          "Мешок для одежды и обуви",
+          "Чехол для костюмов"
+        ]
+      },
+      liners: {
+        sizes: ["Универсальный", "S", "M", "L"],
+        defaultSize: "Универсальный",
+        items: [
+          "Вкладыши тип 1",
+          "Вкладыши тип 2",
+          "Вкладыши тип 3"
+        ]
+      },
+      accessories: {
+        sizes: ["Универсальный", "S", "M", "L"],
+        defaultSize: "Универсальный",
+        items: [
+          "Пятаки для пуант (пара)",
+          "Пояс гимнастический эластичный",
+          "Сетка / резинка для волос"
+        ]
+      }
+    };
+
+    let currentCategory = 'clothes';
+    let currentSelectedSize = 32;
+    let currentOpType = 'sewing';
+    let shiftItems = [];
+    let searchQuery = '';
+
+    function setOpType(op) {
+      currentOpType = op;
+      const sewBtn = document.getElementById('op-sewing');
+      const cutBtn = document.getElementById('op-cutting');
+      const hint = document.getElementById('opHintText');
+      const addBtn = document.getElementById('addBtn');
+      const addBtnText = document.getElementById('addBtnText');
+
+      if (op === 'sewing') {
+        sewBtn.className = "py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 bg-emerald-500 text-black shadow";
+        cutBtn.className = "py-2 px-3 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5 text-[var(--muted-foreground,#94a3b8)] hover:text-white";
+        hint.innerHTML = "🟢 Полностью готовые изделия (сдаются на склад)";
+        hint.className = "text-[11px] text-emerald-400/90 mt-1 pl-1";
+        addBtn.className = "w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black font-extrabold text-sm shadow-lg shadow-emerald-500/20 active:scale-[0.99] transition flex items-center justify-center space-x-2";
+        addBtnText.textContent = "+ Добавить в отчет (Пошив)";
+      } else {
+        cutBtn.className = "py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 bg-amber-500 text-black shadow";
+        sewBtn.className = "py-2 px-3 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5 text-[var(--muted-foreground,#94a3b8)] hover:text-white";
+        hint.innerHTML = "🟡 Раскроенные детали и заготовки в работу";
+        hint.className = "text-[11px] text-amber-400/90 mt-1 pl-1";
+        addBtn.className = "w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-extrabold text-sm shadow-lg shadow-amber-500/20 active:scale-[0.99] transition flex items-center justify-center space-x-2";
+        addBtnText.textContent = "+ Добавить в отчет (Раскрой)";
+      }
+    }
+
+    function setCategory(catKey) {
+      currentCategory = catKey;
+      searchQuery = '';
+      const input = document.getElementById('searchInput');
+      if (input) input.value = '';
+
+      ['clothes', 'bags', 'liners', 'accessories'].forEach(k => {
+        const btn = document.getElementById(`tab-${k}`);
+        if (k === catKey) {
+          btn.className = "py-2 text-xs font-bold rounded-lg transition-all bg-amber-500 text-black shadow";
+        } else {
+          btn.className = "py-2 text-xs font-medium rounded-lg transition-all text-[var(--muted-foreground,#94a3b8)] hover:text-white";
+        }
+      });
+
+      renderItemsDropdown();
+      renderSizeButtons();
+    }
+
+    function handleSearch(q) {
+      searchQuery = q.trim().toLowerCase();
+      renderItemsDropdown();
+    }
+
+    function renderItemsDropdown() {
+      const select = document.getElementById('itemSelect');
+      select.innerHTML = '';
+      
+      const allItems = catalog[currentCategory].items;
+      const filtered = searchQuery 
+        ? allItems.filter(item => item.toLowerCase().includes(searchQuery))
+        : allItems;
+
+      document.getElementById('itemsCountBadge').textContent = `${filtered.length} из ${allItems.length}`;
+
+      if (filtered.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = "";
+        opt.textContent = "Ничего не найдено";
+        select.appendChild(opt);
+        return;
+      }
+
+      filtered.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item;
+        opt.textContent = item;
+        select.appendChild(opt);
+      });
+    }
+
+    function renderSizeButtons() {
+      const container = document.getElementById('sizeButtonsContainer');
+      container.innerHTML = '';
+      const sizes = catalog[currentCategory].sizes;
+      currentSelectedSize = catalog[currentCategory].defaultSize;
+      document.getElementById('selectedSizeLabel').textContent = currentSelectedSize;
+
+      sizes.forEach(sz => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.id = `sz-btn-${sz}`;
+        const isSelected = sz === currentSelectedSize;
+        btn.className = isSelected 
+          ? "px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-black shadow"
+          : "px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] text-[var(--foreground,#f8fafc)] hover:border-amber-400";
+        btn.textContent = sz;
+        btn.onclick = () => selectSize(sz);
+        container.appendChild(btn);
+      });
+    }
+
+    function selectSize(sz) {
+      currentSelectedSize = sz;
+      document.getElementById('selectedSizeLabel').textContent = sz;
+      const sizes = catalog[currentCategory].sizes;
+      sizes.forEach(s => {
+        const b = document.getElementById(`sz-btn-${s}`);
+        if (!b) return;
+        if (s === sz) {
+          b.className = "px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-black shadow";
+        } else {
+          b.className = "px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] text-[var(--foreground,#f8fafc)] hover:border-amber-400";
+        }
+      });
+    }
+
+    function adjustQty(delta) {
+      const input = document.getElementById('qtyInput');
+      let val = parseInt(input.value) || 0;
+      val = Math.max(1, val + delta);
+      input.value = val;
+    }
+
+    function addItemToShift() {
+      const item = document.getElementById('itemSelect').value;
+      if (!item) return;
+
+      const qty = parseInt(document.getElementById('qtyInput').value) || 1;
+      
+      const existing = shiftItems.find(x => x.item === item && x.size === currentSelectedSize && x.op === currentOpType);
+      if (existing) {
+        existing.qty += qty;
+      } else {
+        shiftItems.push({
+          id: Date.now() + Math.random(),
+          category: currentCategory,
+          item: item,
+          size: currentSelectedSize,
+          qty: qty,
+          op: currentOpType
+        });
+      }
+
+      // Reset qty back to 1 for next item
+      document.getElementById('qtyInput').value = 1;
+
+      renderShiftList();
+    }
+
+    function removeFromShift(id) {
+      shiftItems = shiftItems.filter(x => x.id !== id);
+      renderShiftList();
+    }
+
+    function clearShift() {
+      if (shiftItems.length === 0) return;
+      if (confirm('Очистить весь список позиций за смену?')) {
+        shiftItems = [];
+        renderShiftList();
+      }
+    }
+
+    function renderShiftList() {
+      const list = document.getElementById('shiftItemsList');
+      list.innerHTML = '';
+
+      const totalCount = shiftItems.reduce((acc, x) => acc + x.qty, 0);
+      const sewingTotal = shiftItems.filter(x => x.op === 'sewing').reduce((acc, x) => acc + x.qty, 0);
+      const cuttingTotal = shiftItems.filter(x => x.op === 'cutting').reduce((acc, x) => acc + x.qty, 0);
+
+      document.getElementById('totalUnitsCount').textContent = totalCount;
+      document.getElementById('shiftCountBadge').textContent = `${shiftItems.length} поз.`;
+      document.getElementById('summarySewingQty').textContent = `${sewingTotal} шт`;
+      document.getElementById('summaryCuttingQty').textContent = `${cuttingTotal} шт`;
+
+      const submitBtn = document.getElementById('submitShiftBtn');
+      submitBtn.disabled = shiftItems.length === 0;
+
+      if (shiftItems.length === 0) {
+        list.innerHTML = `
+          <div class="text-center py-6 text-xs text-[var(--muted-foreground,#94a3b8)]">
+            В этой смене пока нет добавленных позиций.<br>Выберите изделие выше и нажмите «Добавить».
+          </div>
+        `;
+        return;
+      }
+
+      shiftItems.slice().reverse().forEach(x => {
+        const row = document.createElement('div');
+        row.className = "flex items-center justify-between bg-[var(--background,#0f172a)] p-2.5 rounded-xl border border-[var(--border,#334155)]";
+        
+        const opBadge = x.op === 'sewing' 
+          ? '<span class="bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded text-[10px] font-bold">ПОШИВ</span>'
+          : '<span class="bg-amber-400/20 text-amber-300 px-1.5 py-0.5 rounded text-[10px] font-bold">РАСКРОЙ</span>';
+
+        row.innerHTML = `
+          <div class="flex-1 pr-2">
+            <div class="font-bold text-white leading-tight flex items-center gap-1.5">
+              <span>${x.item}</span>
+              ${opBadge}
+            </div>
+            <div class="text-[11px] text-[var(--muted-foreground,#94a3b8)] mt-0.5">Размер: <span class="text-amber-400 font-bold">${x.size}</span></div>
+          </div>
+          <div class="flex items-center space-x-2.5">
+            <span class="font-extrabold text-sm text-white bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-700">${x.qty} шт</span>
+            <button onclick="removeFromShift(${x.id})" class="text-red-400 hover:text-red-300 p-1 rounded-lg hover:bg-red-500/10 transition" title="Удалить">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </button>
+          </div>
+        `;
+        list.appendChild(row);
+      });
+    }
+
+    function submitShiftToTest() {
+      if (shiftItems.length === 0) return;
+
+      const dateVal = document.getElementById('shiftDateInput').value;
+      const sewingTotal = shiftItems.filter(x => x.op === 'sewing').reduce((acc, x) => acc + x.qty, 0);
+      const cuttingTotal = shiftItems.filter(x => x.op === 'cutting').reduce((acc, x) => acc + x.qty, 0);
+
+      document.getElementById('modalDocNumber').textContent = `Смена за ${dateVal} принята в журнал цеха.`;
+      document.getElementById('modalSeamstress').textContent = activeMasterName;
+      document.getElementById('modalSewingUnits').textContent = sewingTotal + ' шт';
+      document.getElementById('modalCuttingUnits').textContent = cuttingTotal + ' шт';
+
+      // Show modal
+      document.getElementById('successModal').classList.remove('hidden');
+
+      // If in Telegram, send data back to bot
+      if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.sendData(JSON.stringify({
+          action: "submit_shift",
+          date: dateVal,
+          seamstress: activeMasterName,
+          items: shiftItems.map(x => ({
+            category: x.category,
+            name: x.item,
+            size: x.size,
+            qty: x.qty,
+            op: x.op
+          })),
+          sewing_units: sewingTotal,
+          cutting_units: cuttingTotal
+        }));
+      }
+    }
+
+    function closeSuccessModal() {
+      document.getElementById('successModal').classList.add('hidden');
+      shiftItems = [];
+      renderShiftList();
+    }
+
+    // Initialize default view
+    updateMasterProfileUI();
+    setCategory('clothes');
+    renderShiftList();
+  </script>
+</body>
+</html>
