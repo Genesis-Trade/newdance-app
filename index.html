@@ -16,7 +16,7 @@
       margin: 0;
       padding: 0;
     }
-    button, input, select {
+    button, input, select, textarea {
       -webkit-tap-highlight-color: transparent;
     }
     .hide-scrollbar::-webkit-scrollbar {
@@ -38,14 +38,19 @@
           ND
         </div>
         <div>
-          <h1 class="text-xs sm:text-sm font-bold tracking-tight text-[var(--foreground,#f8fafc)] leading-tight">Швейный цех · New Dance</h1>
-          <p class="text-[11px] text-amber-400 font-medium flex items-center gap-1">
+          <h1 class="text-xs sm:text-sm font-bold tracking-tight text-[var(--foreground,#f8fafc)] leading-tight">Цех New Dance</h1>
+          <p class="text-[11px] text-amber-400 font-medium flex items-center gap-1" id="headerModeSubtitle">
             <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
-            Журнал выработки смены
+            Журнал смены и заданий
           </p>
         </div>
       </div>
-      <div class="text-right flex-shrink-0">
+      
+      <!-- Right actions: Task Creator toggle for Manager + Date Badge -->
+      <div class="flex items-center space-x-1.5 flex-shrink-0">
+        <button type="button" onclick="toggleManagerTaskView()" id="managerTaskToggleBtn" class="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-1 rounded-md font-bold transition hover:bg-amber-500 hover:text-black">
+          + Задание
+        </button>
         <span id="shiftDateBadge" class="text-xs bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] px-2 py-1 rounded-md text-[var(--muted-foreground,#94a3b8)] font-mono">
           04.11.2026
         </span>
@@ -53,13 +58,105 @@
     </div>
   </header>
 
-  <!-- Main Work Screen -->
+  <!-- ========================================== -->
+  <!-- 1. MANAGER TASK CREATION VIEW (Hidden by default) -->
+  <!-- ========================================== -->
+  <div id="managerTaskView" class="max-w-md mx-auto px-3 py-3 space-y-3 w-full hidden">
+    <div class="bg-[var(--card,#1e293b)] border border-amber-500/40 rounded-2xl p-3.5 shadow-lg space-y-3">
+      <div class="flex items-center justify-between border-b border-[var(--border,#334155)] pb-2">
+        <div class="flex items-center space-x-2">
+          <span class="text-amber-400 text-sm">👑</span>
+          <h2 class="text-xs sm:text-sm font-bold text-white">Выдать задание в цех</h2>
+        </div>
+        <button onclick="toggleManagerTaskView()" class="text-xs text-[var(--muted-foreground,#94a3b8)] hover:text-white">Отмена</button>
+      </div>
+
+      <!-- Recipient Master -->
+      <div>
+        <label class="block text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground,#94a3b8)] mb-1">
+          Кому назначить задание:
+        </label>
+        <select id="taskTargetMaster" onchange="onTaskTargetChange()" class="w-full bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] text-xs sm:text-sm rounded-xl px-2.5 py-2 text-white focus:outline-none focus:border-amber-400 font-medium">
+          <option value="Роговская Людмила Петровна">🧵 Роговская Людмила Петровна (Пошив)</option>
+          <option value="Руднев Евгений Владимирович">✂️ Руднев Евгений Владимирович (Технолог / Разработка)</option>
+        </select>
+      </div>
+
+      <!-- Task Type: Production or Custom Development -->
+      <div>
+        <label class="block text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground,#94a3b8)] mb-1">
+          Тип задания:
+        </label>
+        <div class="grid grid-cols-2 gap-1.5 bg-[var(--background,#0f172a)] p-1 rounded-xl border border-[var(--border,#334155)]">
+          <button type="button" onclick="setTaskKind('sewing')" id="tkind-sewing" class="py-1.5 px-2 rounded-lg text-xs font-bold bg-amber-500 text-black">
+            Пошив из каталога
+          </button>
+          <button type="button" onclick="setTaskKind('development')" id="tkind-dev" class="py-1.5 px-2 rounded-lg text-xs font-medium text-[var(--muted-foreground,#94a3b8)]">
+            Разработка модели
+          </button>
+        </div>
+      </div>
+
+      <!-- If Custom Development -->
+      <div id="devTaskFields" class="space-y-2 hidden">
+        <div>
+          <label class="block text-[11px] font-semibold text-[var(--muted-foreground,#94a3b8)] mb-1">Название новой модели</label>
+          <input type="text" id="devModelName" placeholder="Купальник с юбкой (опытный образец)" class="w-full bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] text-xs rounded-xl px-2.5 py-2 text-white focus:outline-none focus:border-amber-400">
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-[var(--muted-foreground,#94a3b8)] mb-1">Техническое задание и описание</label>
+          <textarea id="devTaskDesc" rows="2" placeholder="Ткань бордовый бифлекс, лекала 32-40, отработать посадку..." class="w-full bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] text-xs rounded-xl p-2 text-white focus:outline-none focus:border-amber-400"></textarea>
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-[var(--muted-foreground,#94a3b8)] mb-1">Количество образцов (шт)</label>
+          <input type="number" id="devQty" value="1" min="1" class="w-24 bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] text-xs rounded-xl px-2.5 py-1.5 text-center font-bold text-white">
+        </div>
+      </div>
+
+      <!-- If Production Task from Catalog -->
+      <div id="sewingTaskFields" class="space-y-2">
+        <div>
+          <label class="block text-[11px] font-semibold text-[var(--muted-foreground,#94a3b8)] mb-1">Изделие</label>
+          <select id="taskItemSelect" class="w-full bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] text-xs rounded-xl px-2 py-2 text-white font-medium">
+            <!-- Populated by JS -->
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[11px] font-semibold text-[var(--muted-foreground,#94a3b8)] mb-1">Размер</label>
+            <select id="taskSizeSelect" class="w-full bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] text-xs rounded-xl px-2 py-1.5 text-white">
+              <option value="28">28</option>
+              <option value="30">30</option>
+              <option value="32" selected>32</option>
+              <option value="34">34</option>
+              <option value="36">36</option>
+              <option value="38">38</option>
+              <option value="40">40</option>
+              <option value="42">42</option>
+              <option value="Стандарт">Стандарт</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-[var(--muted-foreground,#94a3b8)] mb-1">План (шт)</label>
+            <input type="number" id="taskQtyInput" value="5" min="1" class="w-full bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] text-xs rounded-xl px-2 py-1.5 text-center font-bold text-white">
+          </div>
+        </div>
+      </div>
+
+      <button type="button" onclick="submitManagerTask()" class="w-full py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-extrabold text-xs sm:text-sm rounded-xl transition shadow-md flex items-center justify-center space-x-1.5">
+        <span>Отправить задание в работу</span>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 2. MAIN WORK SCREEN -->
+  <!-- ========================================== -->
   <main id="mainWorkScreen" class="max-w-md mx-auto px-3 py-3 space-y-3 w-full">
 
-    <!-- Seamstress Profile Card with Auto-Telegram detection -->
+    <!-- Seamstress Profile Card -->
     <div class="bg-[var(--card,#1e293b)] border border-[var(--border,#334155)] rounded-2xl p-3 shadow-sm space-y-2.5">
-      
-      <!-- Auto User Badge -->
       <div class="flex items-center justify-between bg-[var(--background,#0f172a)] p-2 rounded-xl border border-[var(--border,#334155)]">
         <div class="flex items-center space-x-2 min-w-0">
           <div class="w-7 h-7 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-xs border border-amber-500/30 flex-shrink-0" id="userAvatar">
@@ -68,7 +165,7 @@
           <div class="min-w-0">
             <div class="text-[10px] text-[var(--muted-foreground,#94a3b8)] font-medium flex items-center gap-1">
               <span>Мастер:</span>
-              <span class="text-emerald-400">● авто-Telegram</span>
+              <span class="text-emerald-400" id="roleBadge">● Швея</span>
             </div>
             <div class="text-xs sm:text-sm font-bold text-white truncate leading-tight" id="detectedMasterName">
               Роговская Людмила Петровна
@@ -80,19 +177,18 @@
         </button>
       </div>
 
-      <!-- Fallback selector if multiple people use one device -->
+      <!-- Fallback selector -->
       <div id="manualMasterBlock" class="hidden pt-1">
         <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground,#94a3b8)] mb-1">
           Выбор мастера вручную:
         </label>
         <select id="seamstressSelect" onchange="onManualMasterChange()" class="w-full bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] text-xs sm:text-sm rounded-xl px-2.5 py-2 text-[var(--foreground,#f8fafc)] focus:outline-none focus:border-amber-400 font-medium">
-          <option value="Роговская Людмила Петровна">Роговская Людмила Петровна</option>
-          <option value="Руднев Евгений Владимирович">Руднев Евгений Владимирович</option>
-          <option value="Сменная швея (цех)">Сменная швея (цех)</option>
+          <option value="Роговская Людмила Петровна">Роговская Людмила Петровна (Швея)</option>
+          <option value="Руднев Евгений Владимирович">Руднев Евгений Владимирович (Технолог / Разработка)</option>
         </select>
       </div>
 
-      <!-- Date Input (defaults to today) -->
+      <!-- Date Input -->
       <div>
         <div class="flex items-center justify-between mb-1">
           <label class="text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground,#94a3b8)]">
@@ -103,28 +199,47 @@
         <input type="date" id="shiftDateInput" value="2026-11-04" onchange="updateDateBadge(this.value)" class="w-full bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] text-xs sm:text-sm rounded-xl px-2.5 py-1.5 text-[var(--foreground,#f8fafc)] focus:outline-none focus:border-amber-400 font-medium">
       </div>
 
-      <!-- Operation Mode Selector (Пошив vs Раскрой) -->
+      <!-- 3-WAY OPERATION SELECTOR: Пошив / Раскрой / ВТО и Упаковка -->
       <div>
         <label class="block text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground,#94a3b8)] mb-1">
-          Вид работы
+          Вид выполняемой работы
         </label>
-        <div class="grid grid-cols-2 gap-1.5 bg-[var(--background,#0f172a)] p-1 rounded-xl border border-[var(--border,#334155)]">
-          <button type="button" onclick="setOpType('sewing')" id="op-sewing" class="py-2 px-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 bg-emerald-500 text-black shadow">
-            <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
-            <span>Пошив (Готово)</span>
+        <div class="grid grid-cols-3 gap-1 bg-[var(--background,#0f172a)] p-1 rounded-xl border border-[var(--border,#334155)]">
+          <button type="button" onclick="setOpType('sewing')" id="op-sewing" class="py-2 px-1 rounded-lg text-[11px] font-bold transition flex items-center justify-center gap-1 bg-emerald-500 text-black shadow truncate">
+            <span>🟢 Пошив</span>
           </button>
-          <button type="button" onclick="setOpType('cutting')" id="op-cutting" class="py-2 px-2 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1 text-[var(--muted-foreground,#94a3b8)] hover:text-white">
-            <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242L10.757 8.5M7 17l-4 4"></path></svg>
-            <span>Раскрой (Крой)</span>
+          <button type="button" onclick="setOpType('cutting')" id="op-cutting" class="py-2 px-1 rounded-lg text-[11px] font-medium transition flex items-center justify-center gap-1 text-[var(--muted-foreground,#94a3b8)] hover:text-white truncate">
+            <span>🟡 Раскрой</span>
+          </button>
+          <button type="button" onclick="setOpType('packing')" id="op-packing" class="py-2 px-1 rounded-lg text-[11px] font-medium transition flex items-center justify-center gap-1 text-[var(--muted-foreground,#94a3b8)] hover:text-white truncate">
+            <span>🔵 ВТО / Пакет</span>
           </button>
         </div>
         <p id="opHintText" class="text-[11px] text-emerald-400/90 mt-1 pl-0.5">
-          🟢 Готовые изделия (сдаются на склад)
+          🟢 Полностью готовые изделия (поступление на склад)
         </p>
       </div>
     </div>
 
-    <!-- Category Tabs (No Footwear) -->
+    <!-- ========================================== -->
+    <!-- ACTIVE TASKS SECTION (Задания руководства) -->
+    <!-- ========================================== -->
+    <div id="activeTasksContainer" class="bg-[var(--card,#1e293b)] border border-amber-500/40 rounded-2xl p-3 shadow-sm space-y-2">
+      <div class="flex items-center justify-between border-b border-[var(--border,#334155)] pb-1.5">
+        <div class="flex items-center space-x-1.5">
+          <span class="text-amber-400 text-xs">📋</span>
+          <h2 class="text-xs font-bold text-white">Задания от руководства</h2>
+          <span id="tasksCountBadge" class="bg-amber-400/20 text-amber-300 text-[10px] px-1.5 py-0.2 rounded-full font-mono">1 план</span>
+        </div>
+        <span class="text-[10px] text-[var(--muted-foreground,#94a3b8)]">Нажмите +1 чтобы зачесть в смену</span>
+      </div>
+
+      <div id="tasksList" class="space-y-2">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+    <!-- Category Tabs -->
     <div class="grid grid-cols-4 gap-1 bg-[var(--card,#1e293b)] p-1 rounded-xl border border-[var(--border,#334155)] w-full">
       <button onclick="setCategory('clothes')" id="tab-clothes" class="py-2 px-0.5 text-[11px] font-bold rounded-lg transition-all bg-amber-500 text-black shadow text-center truncate">
         Одежда
@@ -145,10 +260,16 @@
       
       <!-- Quick Search / Filter Input -->
       <div>
-        <label class="block text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground,#94a3b8)] mb-1">
-          Поиск по изделиям
-        </label>
-        <div class="relative">
+        <div class="flex items-center justify-between mb-1">
+          <label class="text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground,#94a3b8)]">
+            Поиск по каталогу
+          </label>
+          <button type="button" onclick="toggleCustomItemMode()" id="customItemToggleBtn" class="text-[10px] text-amber-400 underline font-medium">
+            + Своя разработка
+          </button>
+        </div>
+
+        <div id="standardSearchBlock" class="relative">
           <input 
             type="text" 
             id="searchInput" 
@@ -160,10 +281,19 @@
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
           </div>
         </div>
+
+        <!-- Custom Item Input (for Technologist / Development) -->
+        <div id="customItemBlock" class="hidden mt-1.5 p-2 bg-[var(--background,#0f172a)] rounded-xl border border-amber-500/40 space-y-1.5">
+          <div class="flex items-center justify-between text-[11px] text-amber-300 font-bold">
+            <span>✨ Новая модель (разработка / технолог)</span>
+            <button type="button" onclick="toggleCustomItemMode()" class="text-red-400 text-xs">✕ Отмена</button>
+          </div>
+          <input type="text" id="customItemInput" placeholder="Название новой модели (напр. Купальник с юбкой)" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-amber-400">
+        </div>
       </div>
 
-      <!-- Item Dropdown -->
-      <div>
+      <!-- Item Dropdown (hidden if custom item mode is active) -->
+      <div id="itemDropdownBlock">
         <div class="flex items-center justify-between mb-1">
           <label class="text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground,#94a3b8)]">
             Модель изделия
@@ -188,7 +318,7 @@
         </div>
       </div>
 
-      <!-- Responsive Quantity Stepper (Guaranteed to fit 100% of phone width) -->
+      <!-- Quantity Stepper -->
       <div class="pt-0.5">
         <label class="block text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground,#94a3b8)] mb-1">
           Количество за смену (шт)
@@ -229,8 +359,10 @@
             <span>Выработка за смену</span>
             <span id="shiftCountBadge" class="bg-amber-400/20 text-amber-300 text-[11px] px-1.5 py-0.2 rounded-full font-mono">0 поз.</span>
           </h2>
-          <p class="text-[11px] text-[var(--muted-foreground,#94a3b8)]">
-            Пошив: <span id="summarySewingQty" class="text-emerald-400 font-bold">0 шт</span> · Раскрой: <span id="summaryCuttingQty" class="text-amber-400 font-bold">0 шт</span>
+          <p class="text-[10px] sm:text-[11px] text-[var(--muted-foreground,#94a3b8)] mt-0.5">
+            🟢 Пошив: <span id="summarySewingQty" class="text-emerald-400 font-bold">0</span> · 
+            🟡 Крой: <span id="summaryCuttingQty" class="text-amber-400 font-bold">0</span> · 
+            🔵 ВТО: <span id="summaryPackingQty" class="text-sky-400 font-bold">0</span>
           </p>
         </div>
         <button onclick="clearShift()" class="text-xs text-red-400 hover:text-red-300 font-medium">Очистить</button>
@@ -298,6 +430,10 @@
         <span class="text-[var(--muted-foreground,#94a3b8)]">🟡 Раскрой (крой в работу):</span>
         <span class="text-amber-400 font-bold" id="closedCuttingTotal">0 шт</span>
       </div>
+      <div class="flex justify-between">
+        <span class="text-[var(--muted-foreground,#94a3b8)]">🔵 ВТО и упаковка:</span>
+        <span class="text-sky-400 font-bold" id="closedPackingTotal">0 шт</span>
+      </div>
     </div>
 
     <div class="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-300 text-xs">
@@ -326,12 +462,16 @@
           <span class="text-white font-bold" id="modalSeamstress">Роговская Людмила Петровна</span>
         </div>
         <div class="flex justify-between">
-          <span class="text-[var(--muted-foreground,#94a3b8)]">Отшито (готово):</span>
+          <span class="text-[var(--muted-foreground,#94a3b8)]">🟢 Отшито:</span>
           <span class="text-emerald-400 font-bold" id="modalSewingUnits">0 шт</span>
         </div>
         <div class="flex justify-between">
-          <span class="text-[var(--muted-foreground,#94a3b8)]">Раскроено (крой):</span>
+          <span class="text-[var(--muted-foreground,#94a3b8)]">🟡 Раскроено:</span>
           <span class="text-amber-400 font-bold" id="modalCuttingUnits">0 шт</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-[var(--muted-foreground,#94a3b8)]">🔵 ВТО / Упаковка:</span>
+          <span class="text-sky-400 font-bold" id="modalPackingUnits">0 шт</span>
         </div>
       </div>
       
@@ -339,7 +479,6 @@
         Смена за сегодня закрыта. Новая смена начнется завтра.
       </p>
 
-      <!-- Only Close App Button (No "Начать новую смену") -->
       <button onclick="closeTelegramApp()" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-black font-extrabold rounded-xl transition text-sm shadow-lg shadow-amber-500/20 flex items-center justify-center space-x-2">
         <span>Закрыть приложение</span>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -349,9 +488,54 @@
 
   <script>
     let activeMasterName = "Роговская Людмила Петровна";
+    let currentUserRole = "seamstress";
+    let isCustomItemMode = false;
     let telegramUser = null;
 
-    // Initialize Telegram WebApp
+    // Active tasks store (assigned by manager)
+    let assignedTasks = [
+      {
+        id: 1,
+        title: "План на пошив от руководства",
+        targetMaster: "Роговская Людмила Петровна",
+        item: "Юбка-солнце сетка черная",
+        size: "32",
+        category: "clothes",
+        targetQty: 5,
+        doneQty: 0
+      }
+    ];
+
+    // 1. Read URL query parameters (sent by Telegram Bot)
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlMaster = urlParams.get('master');
+    const urlRole = urlParams.get('role');
+    const urlTasks = urlParams.get('tasks');
+
+    if (urlMaster) {
+      activeMasterName = decodeURIComponent(urlMaster);
+    }
+    if (urlRole) {
+      currentUserRole = decodeURIComponent(urlRole);
+    }
+    if (urlTasks) {
+      try {
+        const parsed = JSON.parse(decodeURIComponent(urlTasks));
+        if (Array.isArray(parsed)) {
+          assignedTasks = parsed;
+          try { localStorage.setItem('nd_assigned_tasks', JSON.stringify(assignedTasks)); } catch(e){}
+        }
+      } catch (e) {
+        console.error("Error parsing tasks from URL:", e);
+      }
+    } else {
+      try {
+        const cached = localStorage.getItem('nd_assigned_tasks');
+        if (cached) assignedTasks = JSON.parse(cached);
+      } catch(e){}
+    }
+
+    // 2. Initialize Telegram WebApp
     if (window.Telegram && window.Telegram.WebApp) {
       window.Telegram.WebApp.ready();
       window.Telegram.WebApp.expand();
@@ -359,14 +543,16 @@
       const tgUser = window.Telegram.WebApp.initDataUnsafe?.user;
       if (tgUser) {
         telegramUser = tgUser;
-        const tgName = ((tgUser.first_name || '') + ' ' + (tgUser.last_name || '')).trim();
-        if (tgName) {
-          if (tgName.toLowerCase().includes("руден")) {
-            activeMasterName = "Руднев Евгений Владимирович";
-          } else if (tgName.toLowerCase().includes("роговск")) {
-            activeMasterName = "Роговская Людмила Петровна";
-          } else {
-            activeMasterName = tgName;
+        if (!urlMaster) {
+          const tgName = ((tgUser.first_name || '') + ' ' + (tgUser.last_name || '')).trim();
+          if (tgName) {
+            if (tgName.toLowerCase().includes("руден")) {
+              activeMasterName = "Руднев Евгений Владимирович";
+            } else if (tgName.toLowerCase().includes("роговск")) {
+              activeMasterName = "Роговская Людмила Петровна";
+            } else {
+              activeMasterName = tgName;
+            }
           }
         }
       }
@@ -376,6 +562,20 @@
       document.getElementById('detectedMasterName').textContent = activeMasterName;
       const initials = activeMasterName.split(' ').map(n => n[0]).slice(0, 2).join('');
       document.getElementById('userAvatar').textContent = initials || 'ND';
+      
+      const roleBadge = document.getElementById('roleBadge');
+      if (currentUserRole === 'admin' || activeMasterName.includes("Руководитель")) {
+        roleBadge.textContent = "● Руководитель";
+        roleBadge.className = "text-amber-300 font-bold";
+      } else if (currentUserRole === 'technologist' || activeMasterName.includes("Руднев")) {
+        roleBadge.textContent = "● Технолог / Разработка";
+        roleBadge.className = "text-amber-400";
+      } else {
+        roleBadge.textContent = "● Швея";
+        roleBadge.className = "text-emerald-400";
+      }
+
+      renderActiveTasks();
     }
 
     function toggleManualMasterSelect() {
@@ -393,13 +593,212 @@
       document.getElementById('shiftDateBadge').textContent = val.split('-').reverse().join('.');
     }
 
-    // Exact catalog updated with all models
+    function toggleCustomItemMode() {
+      isCustomItemMode = !isCustomItemMode;
+      const customBlock = document.getElementById('customItemBlock');
+      const standardBlock = document.getElementById('standardSearchBlock');
+      const dropdownBlock = document.getElementById('itemDropdownBlock');
+      const btn = document.getElementById('customItemToggleBtn');
+
+      if (isCustomItemMode) {
+        customBlock.classList.remove('hidden');
+        standardBlock.classList.add('hidden');
+        dropdownBlock.classList.add('hidden');
+        btn.textContent = "✕ Каталог";
+        document.getElementById('customItemInput').focus();
+      } else {
+        customBlock.classList.add('hidden');
+        standardBlock.classList.remove('hidden');
+        dropdownBlock.classList.remove('hidden');
+        btn.textContent = "+ Своя разработка";
+      }
+    }
+
+    function toggleManagerTaskView() {
+      const taskView = document.getElementById('managerTaskView');
+      const mainScreen = document.getElementById('mainWorkScreen');
+      const bottomBar = document.getElementById('stickyBottomBar');
+
+      if (taskView.classList.contains('hidden')) {
+        taskView.classList.remove('hidden');
+        mainScreen.classList.add('hidden');
+        bottomBar.classList.add('hidden');
+        document.getElementById('managerTaskToggleBtn').textContent = "✕ Закрыть";
+      } else {
+        taskView.classList.add('hidden');
+        mainScreen.classList.remove('hidden');
+        bottomBar.classList.remove('hidden');
+        document.getElementById('managerTaskToggleBtn').textContent = "+ Задание";
+      }
+    }
+
+    function onTaskTargetChange() {
+      const target = document.getElementById('taskTargetMaster').value;
+      if (target.includes("Руднев")) {
+        setTaskKind('development');
+      } else {
+        setTaskKind('sewing');
+      }
+    }
+
+    function setTaskKind(kind) {
+      const sewBtn = document.getElementById('tkind-sewing');
+      const devBtn = document.getElementById('tkind-dev');
+      const sewFields = document.getElementById('sewingTaskFields');
+      const devFields = document.getElementById('devTaskFields');
+
+      if (kind === 'development') {
+        devBtn.className = "py-1.5 px-2 rounded-lg text-xs font-bold bg-amber-500 text-black";
+        sewBtn.className = "py-1.5 px-2 rounded-lg text-xs font-medium text-[var(--muted-foreground,#94a3b8)]";
+        devFields.classList.remove('hidden');
+        sewFields.classList.add('hidden');
+      } else {
+        sewBtn.className = "py-1.5 px-2 rounded-lg text-xs font-bold bg-amber-500 text-black";
+        devBtn.className = "py-1.5 px-2 rounded-lg text-xs font-medium text-[var(--muted-foreground,#94a3b8)]";
+        sewFields.classList.remove('hidden');
+        devFields.classList.add('hidden');
+      }
+    }
+
+    function submitManagerTask() {
+      const targetMaster = document.getElementById('taskTargetMaster').value;
+      const isDev = !document.getElementById('devTaskFields').classList.contains('hidden');
+
+      let taskItem = {};
+      if (isDev) {
+        const title = document.getElementById('devModelName').value.trim() || "Новая разработка модели";
+        const desc = document.getElementById('devTaskDesc').value.trim();
+        const qty = parseInt(document.getElementById('devQty').value) || 1;
+
+        taskItem = {
+          id: Date.now(),
+          title: `Разработка: ${title}`,
+          targetMaster: targetMaster,
+          item: title,
+          size: "Образец",
+          category: "development",
+          description: desc,
+          targetQty: qty,
+          doneQty: 0
+        };
+      } else {
+        const item = document.getElementById('taskItemSelect').value;
+        const size = document.getElementById('taskSizeSelect').value;
+        const qty = parseInt(document.getElementById('taskQtyInput').value) || 5;
+
+        taskItem = {
+          id: Date.now(),
+          title: `Пошив: ${item}`,
+          targetMaster: targetMaster,
+          item: item,
+          size: size,
+          category: "clothes",
+          targetQty: qty,
+          doneQty: 0
+        };
+      }
+
+      assignedTasks.push(taskItem);
+      toggleManagerTaskView();
+      renderActiveTasks();
+
+      // If in Telegram, send task creation to bot
+      if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.sendData(JSON.stringify({
+          action: "admin_create_task",
+          assigned_master: targetMaster,
+          task_type: isDev ? "development" : "sewing",
+          title: taskItem.title,
+          description: taskItem.description || "",
+          items: [{
+            name: taskItem.item,
+            size: taskItem.size,
+            qty: taskItem.targetQty,
+            category: taskItem.category
+          }]
+        }));
+      }
+
+      alert("Задание успешно отправлено!");
+    }
+
+    function renderActiveTasks() {
+      const container = document.getElementById('tasksList');
+      const badge = document.getElementById('tasksCountBadge');
+      container.innerHTML = '';
+
+      const myTasks = assignedTasks.filter(t => t.targetMaster === activeMasterName && t.doneQty < t.targetQty);
+      badge.textContent = `${myTasks.length} план`;
+
+      if (myTasks.length === 0) {
+        container.innerHTML = `
+          <div class="text-xs text-[var(--muted-foreground,#94a3b8)] py-2 text-center">
+            На сегодня нет активных невыполненных заданий.
+          </div>
+        `;
+        return;
+      }
+
+      myTasks.forEach(task => {
+        const row = document.createElement('div');
+        row.className = "bg-[var(--background,#0f172a)] border border-amber-500/30 rounded-xl p-2.5 flex items-center justify-between";
+
+        row.innerHTML = `
+          <div class="min-w-0 pr-2">
+            <div class="text-xs font-bold text-white leading-tight truncate">
+              ${task.item}
+            </div>
+            <div class="text-[10px] text-[var(--muted-foreground,#94a3b8)] mt-0.5">
+              Размер: <span class="text-amber-400 font-bold">${task.size}</span> · План: <span class="text-white font-bold">${task.targetQty} шт</span>
+            </div>
+            <div class="text-[10px] text-emerald-400 font-medium mt-0.5">
+              Сделано: ${task.doneQty} из ${task.targetQty} шт
+            </div>
+          </div>
+          <button type="button" onclick="progressTask(${task.id})" class="px-2.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs rounded-lg active:scale-95 transition flex items-center gap-1 flex-shrink-0 shadow">
+            <span>+1 в смену</span>
+          </button>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function progressTask(taskId) {
+      const task = assignedTasks.find(t => t.id === taskId);
+      if (!task) return;
+
+      if (task.doneQty < task.targetQty) {
+        task.doneQty += 1;
+        try { localStorage.setItem('nd_assigned_tasks', JSON.stringify(assignedTasks)); } catch(e){}
+
+        // Auto-add 1 unit into the shift!
+        const existing = shiftItems.find(x => x.item === task.item && x.size === task.size && x.op === 'sewing');
+        if (existing) {
+          existing.qty += 1;
+          existing.from_task_id = existing.from_task_id || task.id;
+        } else {
+          shiftItems.push({
+            id: Date.now() + Math.random(),
+            category: task.category || "clothes",
+            item: task.item,
+            size: task.size,
+            qty: 1,
+            op: "sewing",
+            from_task_id: task.id
+          });
+        }
+
+        renderActiveTasks();
+        renderShiftList();
+      }
+    }
+
+    // Catalog data
     const catalog = {
       clothes: {
         sizes: [26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, "Разработка"],
         defaultSize: 32,
         items: [
-          // Новые позиции:
           "Купальник на широких лямках черный",
           "Купальник на широких лямках бордовый",
           "Купальник-шорты",
@@ -407,7 +806,6 @@
           "Болеро бордовое",
           "Шорты бордовые",
           "Юбка-солнце шифон бордовая",
-          // Базовый ассортимент цеха:
           "Юбка-солнце полиамид черная",
           "Юбка-солнце полиамид белая",
           "Юбка-солнце сетка черная",
@@ -458,7 +856,7 @@
 
     let currentCategory = 'clothes';
     let currentSelectedSize = 32;
-    let currentOpType = 'sewing';
+    let currentOpType = 'sewing'; // 'sewing', 'cutting', 'packing'
     let shiftItems = [];
     let searchQuery = '';
 
@@ -466,24 +864,34 @@
       currentOpType = op;
       const sewBtn = document.getElementById('op-sewing');
       const cutBtn = document.getElementById('op-cutting');
+      const packBtn = document.getElementById('op-packing');
       const hint = document.getElementById('opHintText');
       const addBtn = document.getElementById('addBtn');
       const addBtnText = document.getElementById('addBtnText');
 
+      // Reset styles
+      sewBtn.className = "py-2 px-1 rounded-lg text-[11px] font-medium transition flex items-center justify-center gap-1 text-[var(--muted-foreground,#94a3b8)] hover:text-white truncate";
+      cutBtn.className = "py-2 px-1 rounded-lg text-[11px] font-medium transition flex items-center justify-center gap-1 text-[var(--muted-foreground,#94a3b8)] hover:text-white truncate";
+      packBtn.className = "py-2 px-1 rounded-lg text-[11px] font-medium transition flex items-center justify-center gap-1 text-[var(--muted-foreground,#94a3b8)] hover:text-white truncate";
+
       if (op === 'sewing') {
-        sewBtn.className = "py-2 px-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 bg-emerald-500 text-black shadow";
-        cutBtn.className = "py-2 px-2 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1 text-[var(--muted-foreground,#94a3b8)] hover:text-white";
-        hint.innerHTML = "🟢 Готовые изделия (сдаются на склад)";
+        sewBtn.className = "py-2 px-1 rounded-lg text-[11px] font-bold transition flex items-center justify-center gap-1 bg-emerald-500 text-black shadow truncate";
+        hint.innerHTML = "🟢 Полностью готовые изделия (поступление на склад)";
         hint.className = "text-[11px] text-emerald-400/90 mt-1 pl-0.5";
         addBtn.className = "w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black font-extrabold text-xs sm:text-sm shadow-md active:scale-[0.99] transition flex items-center justify-center space-x-1.5";
         addBtnText.textContent = "+ Добавить в отчет (Пошив)";
-      } else {
-        cutBtn.className = "py-2 px-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 bg-amber-500 text-black shadow";
-        sewBtn.className = "py-2 px-2 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1 text-[var(--muted-foreground,#94a3b8)] hover:text-white";
+      } else if (op === 'cutting') {
+        cutBtn.className = "py-2 px-1 rounded-lg text-[11px] font-bold transition flex items-center justify-center gap-1 bg-amber-500 text-black shadow truncate";
         hint.innerHTML = "🟡 Раскроенные детали и заготовки в работу";
         hint.className = "text-[11px] text-amber-400/90 mt-1 pl-0.5";
         addBtn.className = "w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-extrabold text-xs sm:text-sm shadow-md active:scale-[0.99] transition flex items-center justify-center space-x-1.5";
         addBtnText.textContent = "+ Добавить в отчет (Раскрой)";
+      } else {
+        packBtn.className = "py-2 px-1 rounded-lg text-[11px] font-bold transition flex items-center justify-center gap-1 bg-sky-500 text-black shadow truncate";
+        hint.innerHTML = "🔵 ВТО, утюжка, отпаривание, бирки и упаковка в пакеты";
+        hint.className = "text-[11px] text-sky-400/90 mt-1 pl-0.5";
+        addBtn.className = "w-full py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-500 hover:from-sky-400 hover:to-blue-400 text-black font-extrabold text-xs sm:text-sm shadow-md active:scale-[0.99] transition flex items-center justify-center space-x-1.5";
+        addBtnText.textContent = "+ Добавить в отчет (ВТО и Упаковка)";
       }
     }
 
@@ -513,7 +921,9 @@
 
     function renderItemsDropdown() {
       const select = document.getElementById('itemSelect');
+      const taskSelect = document.getElementById('taskItemSelect');
       select.innerHTML = '';
+      if (taskSelect) taskSelect.innerHTML = '';
       
       const allItems = catalog[currentCategory].items;
       const filtered = searchQuery 
@@ -535,6 +945,12 @@
         opt.value = item;
         opt.textContent = item;
         select.appendChild(opt);
+        if (taskSelect) {
+          const opt2 = document.createElement('option');
+          opt2.value = item;
+          opt2.textContent = item;
+          taskSelect.appendChild(opt2);
+        }
       });
     }
 
@@ -582,9 +998,18 @@
     }
 
     function addItemToShift() {
-      const item = document.getElementById('itemSelect').value;
-      if (!item) return;
+      let item = "";
+      if (isCustomItemMode) {
+        item = document.getElementById('customItemInput').value.trim();
+        if (!item) {
+          alert("Введите название новой модели!");
+          return;
+        }
+      } else {
+        item = document.getElementById('itemSelect').value;
+      }
 
+      if (!item) return;
       const qty = parseInt(document.getElementById('qtyInput').value) || 1;
       
       const existing = shiftItems.find(x => x.item === item && x.size === currentSelectedSize && x.op === currentOpType);
@@ -593,7 +1018,7 @@
       } else {
         shiftItems.push({
           id: Date.now() + Math.random(),
-          category: currentCategory,
+          category: isCustomItemMode ? "development" : currentCategory,
           item: item,
           size: currentSelectedSize,
           qty: qty,
@@ -601,8 +1026,10 @@
         });
       }
 
-      // Reset qty back to 1 for next item
       document.getElementById('qtyInput').value = 1;
+      if (isCustomItemMode) {
+        document.getElementById('customItemInput').value = '';
+      }
 
       renderShiftList();
     }
@@ -627,11 +1054,13 @@
       const totalCount = shiftItems.reduce((acc, x) => acc + x.qty, 0);
       const sewingTotal = shiftItems.filter(x => x.op === 'sewing').reduce((acc, x) => acc + x.qty, 0);
       const cuttingTotal = shiftItems.filter(x => x.op === 'cutting').reduce((acc, x) => acc + x.qty, 0);
+      const packingTotal = shiftItems.filter(x => x.op === 'packing').reduce((acc, x) => acc + x.qty, 0);
 
       document.getElementById('totalUnitsCount').textContent = totalCount;
       document.getElementById('shiftCountBadge').textContent = `${shiftItems.length} поз.`;
-      document.getElementById('summarySewingQty').textContent = `${sewingTotal} шт`;
-      document.getElementById('summaryCuttingQty').textContent = `${cuttingTotal} шт`;
+      document.getElementById('summarySewingQty').textContent = sewingTotal;
+      document.getElementById('summaryCuttingQty').textContent = cuttingTotal;
+      document.getElementById('summaryPackingQty').textContent = packingTotal;
 
       const submitBtn = document.getElementById('submitShiftBtn');
       submitBtn.disabled = shiftItems.length === 0;
@@ -649,9 +1078,14 @@
         const row = document.createElement('div');
         row.className = "flex items-center justify-between bg-[var(--background,#0f172a)] p-2 rounded-xl border border-[var(--border,#334155)]";
         
-        const opBadge = x.op === 'sewing' 
-          ? '<span class="bg-emerald-500/20 text-emerald-400 px-1 py-0.5 rounded text-[9px] font-bold">ПОШИВ</span>'
-          : '<span class="bg-amber-400/20 text-amber-300 px-1 py-0.5 rounded text-[9px] font-bold">РАСКРОЙ</span>';
+        let opBadge = '';
+        if (x.op === 'sewing') {
+          opBadge = '<span class="bg-emerald-500/20 text-emerald-400 px-1 py-0.5 rounded text-[9px] font-bold">ПОШИВ</span>';
+        } else if (x.op === 'cutting') {
+          opBadge = '<span class="bg-amber-400/20 text-amber-300 px-1 py-0.5 rounded text-[9px] font-bold">РАСКРОЙ</span>';
+        } else {
+          opBadge = '<span class="bg-sky-500/20 text-sky-300 px-1 py-0.5 rounded text-[9px] font-bold">ВТО/УПАК</span>';
+        }
 
         row.innerHTML = `
           <div class="flex-1 pr-1.5 min-w-0">
@@ -678,14 +1112,16 @@
       const dateVal = document.getElementById('shiftDateInput').value;
       const sewingTotal = shiftItems.filter(x => x.op === 'sewing').reduce((acc, x) => acc + x.qty, 0);
       const cuttingTotal = shiftItems.filter(x => x.op === 'cutting').reduce((acc, x) => acc + x.qty, 0);
+      const packingTotal = shiftItems.filter(x => x.op === 'packing').reduce((acc, x) => acc + x.qty, 0);
 
-      // Save to localStorage that shift is closed for this date
+      // Save lockout in localStorage
       try {
         localStorage.setItem('nd_shift_closed_' + dateVal, JSON.stringify({
           date: dateVal,
           seamstress: activeMasterName,
           sewing: sewingTotal,
           cutting: cuttingTotal,
+          packing: packingTotal,
           itemsCount: shiftItems.length
         }));
       } catch (e) {}
@@ -694,8 +1130,8 @@
       document.getElementById('modalSeamstress').textContent = activeMasterName;
       document.getElementById('modalSewingUnits').textContent = sewingTotal + ' шт';
       document.getElementById('modalCuttingUnits').textContent = cuttingTotal + ' шт';
+      document.getElementById('modalPackingUnits').textContent = packingTotal + ' шт';
 
-      // Show modal
       document.getElementById('successModal').classList.remove('hidden');
 
       // Send data to Telegram Bot
@@ -709,10 +1145,20 @@
             name: x.item,
             size: x.size,
             qty: x.qty,
-            op: x.op
+            op: x.op,
+            from_task_id: x.from_task_id || null
+          })),
+          completed_tasks: assignedTasks.filter(t => t.targetMaster === activeMasterName && t.doneQty > 0).map(t => ({
+            task_id: t.id,
+            item: t.item,
+            size: t.size,
+            doneQty: t.doneQty,
+            targetQty: t.targetQty,
+            isCompleted: t.doneQty >= t.targetQty
           })),
           sewing_units: sewingTotal,
-          cutting_units: cuttingTotal
+          cutting_units: cuttingTotal,
+          packing_units: packingTotal
         }));
       }
     }
@@ -721,7 +1167,6 @@
       if (window.Telegram && window.Telegram.WebApp) {
         window.Telegram.WebApp.close();
       } else {
-        // Fallback for browser preview
         document.getElementById('successModal').classList.add('hidden');
         checkShiftLock();
       }
@@ -740,6 +1185,7 @@
           document.getElementById('closedShiftDate').textContent = shift.date.split('-').reverse().join('.');
           document.getElementById('closedSewingTotal').textContent = shift.sewing + ' шт';
           document.getElementById('closedCuttingTotal').textContent = shift.cutting + ' шт';
+          document.getElementById('closedPackingTotal').textContent = (shift.packing || 0) + ' шт';
           
           document.getElementById('shiftClosedScreen').classList.remove('hidden');
           return true;
@@ -748,7 +1194,7 @@
       return false;
     }
 
-    // Initialize default view
+    // Initialize
     updateMasterProfileUI();
     setCategory('clothes');
     renderShiftList();
