@@ -437,13 +437,24 @@
     </div>
 
     <div class="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-300 text-xs">
-      ✨ <strong>Хорошего отдыха!</strong> Новую смену можно будет начать только завтра.
+      ✨ <strong>Смена зафиксирована!</strong> Вы можете продолжить её или начать заново.
     </div>
 
-    <button onclick="closeTelegramApp()" class="w-full py-3 bg-slate-800 hover:bg-slate-700 border border-[var(--border,#334155)] text-white font-bold rounded-xl transition text-sm flex items-center justify-center space-x-2">
-      <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-      <span>Закрыть приложение</span>
-    </button>
+    <div class="space-y-2 pt-1">
+      <button type="button" onclick="reopenCurrentShift()" class="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-extrabold rounded-xl transition text-sm flex items-center justify-center space-x-2 shadow-lg active:scale-95">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+        <span>✏️ Продолжить / Дополнить смену</span>
+      </button>
+
+      <button type="button" onclick="startNewShiftForce()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold rounded-xl transition text-xs flex items-center justify-center space-x-2 border border-amber-500/30">
+        <span>🔄 Начать новую смену с нуля</span>
+      </button>
+
+      <button type="button" onclick="closeTelegramApp()" class="w-full py-2.5 bg-slate-900/80 hover:bg-slate-800 border border-[var(--border,#334155)] text-slate-400 hover:text-white font-medium rounded-xl transition text-xs flex items-center justify-center space-x-2">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        <span>Закрыть окно</span>
+      </button>
+    </div>
   </div>
 
   <!-- Success Modal (Shown right after clicking "Завершить смену") -->
@@ -512,11 +523,20 @@
     const urlRole = urlParams.get('role');
     const urlTasks = urlParams.get('tasks');
 
-    if (urlMaster) {
-      activeMasterName = decodeURIComponent(urlMaster);
-    }
-    if (urlRole) {
-      currentUserRole = decodeURIComponent(urlRole);
+    if (urlRole === 'seamstress' || (urlMaster && (urlMaster.includes('Роговск') || urlMaster.includes('Людмил')))) {
+      activeMasterName = "Роговская Людмила Петровна";
+      currentUserRole = "seamstress";
+    } else if (urlRole === 'technologist' || (urlMaster && urlMaster.includes('Руднев'))) {
+      activeMasterName = "Руднев Евгений Владимирович";
+      currentUserRole = "technologist";
+    } else if (urlRole === 'admin' || (urlMaster && urlMaster.includes('Руковод'))) {
+      activeMasterName = "Руководитель";
+      currentUserRole = "admin";
+    } else if (urlMaster) {
+      try { activeMasterName = decodeURIComponent(urlMaster); } catch(e){ activeMasterName = urlMaster; }
+      if (urlRole) {
+        try { currentUserRole = decodeURIComponent(urlRole); } catch(e){ currentUserRole = urlRole; }
+      }
     }
     if (urlTasks) {
       try {
@@ -1172,8 +1192,45 @@
       }
     }
 
+    function initCurrentDate() {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      const todayISO = `${y}-${m}-${d}`;
+      const todayDisplay = `${d}.${m}.${y}`;
+
+      const dateInput = document.getElementById('shiftDateInput');
+      if (dateInput) {
+        dateInput.value = todayISO;
+      }
+      const dateBadge = document.getElementById('shiftDateBadge');
+      if (dateBadge) {
+        dateBadge.textContent = todayDisplay;
+      }
+      return todayISO;
+    }
+
+    function reopenCurrentShift() {
+      document.getElementById('shiftClosedScreen').classList.add('hidden');
+      document.getElementById('mainWorkScreen').classList.remove('hidden');
+      document.getElementById('stickyBottomBar').classList.remove('hidden');
+    }
+
+    function startNewShiftForce() {
+      const dateInput = document.getElementById('shiftDateInput');
+      if (dateInput) {
+        try { localStorage.removeItem('nd_shift_closed_' + dateInput.value); } catch(e){}
+      }
+      shiftItems = [];
+      renderShiftList();
+      reopenCurrentShift();
+    }
+
     function checkShiftLock() {
-      const todayVal = document.getElementById('shiftDateInput').value;
+      const dateInput = document.getElementById('shiftDateInput');
+      if (!dateInput) return false;
+      const todayVal = dateInput.value;
       const savedData = localStorage.getItem('nd_shift_closed_' + todayVal);
       if (savedData) {
         try {
@@ -1181,20 +1238,24 @@
           document.getElementById('mainWorkScreen').classList.add('hidden');
           document.getElementById('stickyBottomBar').classList.add('hidden');
           
-          document.getElementById('closedSeamstressName').textContent = shift.seamstress;
-          document.getElementById('closedShiftDate').textContent = shift.date.split('-').reverse().join('.');
-          document.getElementById('closedSewingTotal').textContent = shift.sewing + ' шт';
-          document.getElementById('closedCuttingTotal').textContent = shift.cutting + ' шт';
+          document.getElementById('closedSeamstressName').textContent = shift.seamstress || activeMasterName;
+          document.getElementById('closedShiftDate').textContent = (shift.date || todayVal).split('-').reverse().join('.');
+          document.getElementById('closedSewingTotal').textContent = (shift.sewing || 0) + ' шт';
+          document.getElementById('closedCuttingTotal').textContent = (shift.cutting || 0) + ' шт';
           document.getElementById('closedPackingTotal').textContent = (shift.packing || 0) + ' шт';
           
           document.getElementById('shiftClosedScreen').classList.remove('hidden');
           return true;
         } catch (e) {}
       }
+      document.getElementById('shiftClosedScreen').classList.add('hidden');
+      document.getElementById('mainWorkScreen').classList.remove('hidden');
+      document.getElementById('stickyBottomBar').classList.remove('hidden');
       return false;
     }
 
     // Initialize
+    initCurrentDate();
     updateMasterProfileUI();
     setCategory('clothes');
     renderShiftList();
