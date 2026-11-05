@@ -199,20 +199,23 @@
         <input type="date" id="shiftDateInput" value="2026-11-04" onchange="updateDateBadge(this.value)" class="w-full bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] text-xs sm:text-sm rounded-xl px-2.5 py-1.5 text-[var(--foreground,#f8fafc)] focus:outline-none focus:border-amber-400 font-medium">
       </div>
 
-      <!-- 3-WAY OPERATION SELECTOR: Пошив / Раскрой / ВТО и Упаковка -->
+      <!-- 4-WAY OPERATION SELECTOR: Пошив / Раскрой / ВТО и Упаковка / Разработка -->
       <div>
         <label class="block text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground,#94a3b8)] mb-1">
           Вид выполняемой работы
         </label>
-        <div class="grid grid-cols-3 gap-1 bg-[var(--background,#0f172a)] p-1 rounded-xl border border-[var(--border,#334155)]">
-          <button type="button" onclick="setOpType('sewing')" id="op-sewing" class="py-2 px-1 rounded-lg text-[11px] font-bold transition flex items-center justify-center gap-1 bg-emerald-500 text-black shadow truncate">
+        <div class="grid grid-cols-4 gap-1 bg-[var(--background,#0f172a)] p-1 rounded-xl border border-[var(--border,#334155)]">
+          <button type="button" onclick="setOpType('sewing')" id="op-sewing" class="py-2 px-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition flex items-center justify-center gap-0.5 bg-emerald-500 text-black shadow truncate">
             <span>🟢 Пошив</span>
           </button>
-          <button type="button" onclick="setOpType('cutting')" id="op-cutting" class="py-2 px-1 rounded-lg text-[11px] font-medium transition flex items-center justify-center gap-1 text-[var(--muted-foreground,#94a3b8)] hover:text-white truncate">
-            <span>🟡 Раскрой</span>
+          <button type="button" onclick="setOpType('cutting')" id="op-cutting" class="py-2 px-1 rounded-lg text-[10px] sm:text-[11px] font-medium transition flex items-center justify-center gap-0.5 text-[var(--muted-foreground,#94a3b8)] hover:text-white truncate">
+            <span>🟡 Крой</span>
           </button>
-          <button type="button" onclick="setOpType('packing')" id="op-packing" class="py-2 px-1 rounded-lg text-[11px] font-medium transition flex items-center justify-center gap-1 text-[var(--muted-foreground,#94a3b8)] hover:text-white truncate">
-            <span>🔵 ВТО / Пакет</span>
+          <button type="button" onclick="setOpType('packing')" id="op-packing" class="py-2 px-1 rounded-lg text-[10px] sm:text-[11px] font-medium transition flex items-center justify-center gap-0.5 text-[var(--muted-foreground,#94a3b8)] hover:text-white truncate">
+            <span>🔵 ВТО</span>
+          </button>
+          <button type="button" onclick="setOpType('development')" id="op-development" class="py-2 px-1 rounded-lg text-[10px] sm:text-[11px] font-medium transition flex items-center justify-center gap-0.5 text-[var(--muted-foreground,#94a3b8)] hover:text-white truncate">
+            <span>🟣 Разработка</span>
           </button>
         </div>
         <p id="opHintText" class="text-[11px] text-emerald-400/90 mt-1 pl-0.5">
@@ -305,6 +308,28 @@
         </select>
       </div>
 
+      <!-- Dedicated Development & Pattern Notes (Shown when 'Разработка' is selected) -->
+      <div id="devDetailsBlock" class="hidden p-3 bg-purple-950/40 border border-purple-500/50 rounded-xl space-y-2">
+        <div class="flex items-center justify-between">
+          <label class="text-[11px] font-bold uppercase tracking-wider text-purple-300 flex items-center gap-1.5">
+            <span>📐</span> Графа разработки / Выкройки / Лекала:
+          </label>
+          <span class="text-[10px] text-purple-400 font-mono font-medium">Технолог</span>
+        </div>
+        <input 
+          type="text" 
+          id="devNotesInput" 
+          placeholder="Например: Создание выкройки, градация лекал р.30-38" 
+          class="w-full bg-[var(--background,#0f172a)] border border-purple-500/50 rounded-xl px-2.5 py-2 text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:border-purple-400 font-medium"
+        >
+        <div class="flex flex-wrap gap-1 pt-0.5">
+          <button type="button" onclick="setDevTemplate('Базовая выкройка')" class="px-2 py-0.5 rounded-md bg-purple-900/60 hover:bg-purple-800 text-[10px] text-purple-200 border border-purple-700/50 transition">+ Выкройка</button>
+          <button type="button" onclick="setDevTemplate('Градация лекал')" class="px-2 py-0.5 rounded-md bg-purple-900/60 hover:bg-purple-800 text-[10px] text-purple-200 border border-purple-700/50 transition">+ Градация лекал</button>
+          <button type="button" onclick="setDevTemplate('Пошив тестового образца')" class="px-2 py-0.5 rounded-md bg-purple-900/60 hover:bg-purple-800 text-[10px] text-purple-200 border border-purple-700/50 transition">+ Образец</button>
+          <button type="button" onclick="setDevTemplate('Корректировка посадки')" class="px-2 py-0.5 rounded-md bg-purple-900/60 hover:bg-purple-800 text-[10px] text-purple-200 border border-purple-700/50 transition">+ Корректировка</button>
+        </div>
+      </div>
+
       <!-- Size Selector -->
       <div>
         <div class="flex items-center justify-between mb-1">
@@ -362,7 +387,8 @@
           <p class="text-[10px] sm:text-[11px] text-[var(--muted-foreground,#94a3b8)] mt-0.5">
             🟢 Пошив: <span id="summarySewingQty" class="text-emerald-400 font-bold">0</span> · 
             🟡 Крой: <span id="summaryCuttingQty" class="text-amber-400 font-bold">0</span> · 
-            🔵 ВТО: <span id="summaryPackingQty" class="text-sky-400 font-bold">0</span>
+            🔵 ВТО: <span id="summaryPackingQty" class="text-sky-400 font-bold">0</span> · 
+            🟣 Разработка: <span id="summaryDevQty" class="text-purple-400 font-bold">0</span>
           </p>
         </div>
         <button onclick="clearShift()" class="text-xs text-red-400 hover:text-red-300 font-medium">Очистить</button>
@@ -434,6 +460,10 @@
         <span class="text-[var(--muted-foreground,#94a3b8)]">🔵 ВТО и упаковка:</span>
         <span class="text-sky-400 font-bold" id="closedPackingTotal">0 шт</span>
       </div>
+      <div class="flex justify-between">
+        <span class="text-[var(--muted-foreground,#94a3b8)]">🟣 Разработка (лекала/образцы):</span>
+        <span class="text-purple-400 font-bold" id="closedDevTotal">0 шт</span>
+      </div>
     </div>
 
     <div class="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-300 text-xs">
@@ -483,6 +513,10 @@
         <div class="flex justify-between">
           <span class="text-[var(--muted-foreground,#94a3b8)]">🔵 ВТО / Упаковка:</span>
           <span class="text-sky-400 font-bold" id="modalPackingUnits">0 шт</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-[var(--muted-foreground,#94a3b8)]">🟣 Разработка:</span>
+          <span class="text-purple-400 font-bold" id="modalDevUnits">0 шт</span>
         </div>
       </div>
       
@@ -589,10 +623,12 @@
         roleBadge.className = "text-amber-300 font-bold";
       } else if (currentUserRole === 'technologist' || activeMasterName.includes("Руднев")) {
         roleBadge.textContent = "● Технолог / Разработка";
-        roleBadge.className = "text-amber-400";
+        roleBadge.className = "text-purple-400 font-bold";
+        setOpType('development');
       } else {
         roleBadge.textContent = "● Швея";
-        roleBadge.className = "text-emerald-400";
+        roleBadge.className = "text-emerald-400 font-bold";
+        setOpType('sewing');
       }
 
       renderActiveTasks();
@@ -880,39 +916,67 @@
     let shiftItems = [];
     let searchQuery = '';
 
+    function setDevTemplate(txt) {
+      const input = document.getElementById('devNotesInput');
+      if (!input) return;
+      if (input.value.trim()) {
+        input.value = input.value.trim() + ', ' + txt;
+      } else {
+        input.value = txt;
+      }
+    }
+
     function setOpType(op) {
       currentOpType = op;
       const sewBtn = document.getElementById('op-sewing');
       const cutBtn = document.getElementById('op-cutting');
       const packBtn = document.getElementById('op-packing');
+      const devBtn = document.getElementById('op-development');
       const hint = document.getElementById('opHintText');
       const addBtn = document.getElementById('addBtn');
       const addBtnText = document.getElementById('addBtnText');
+      const devBlock = document.getElementById('devDetailsBlock');
 
       // Reset styles
-      sewBtn.className = "py-2 px-1 rounded-lg text-[11px] font-medium transition flex items-center justify-center gap-1 text-[var(--muted-foreground,#94a3b8)] hover:text-white truncate";
-      cutBtn.className = "py-2 px-1 rounded-lg text-[11px] font-medium transition flex items-center justify-center gap-1 text-[var(--muted-foreground,#94a3b8)] hover:text-white truncate";
-      packBtn.className = "py-2 px-1 rounded-lg text-[11px] font-medium transition flex items-center justify-center gap-1 text-[var(--muted-foreground,#94a3b8)] hover:text-white truncate";
+      sewBtn.className = "py-2 px-1 rounded-lg text-[10px] sm:text-[11px] font-medium transition flex items-center justify-center gap-0.5 text-[var(--muted-foreground,#94a3b8)] hover:text-white truncate";
+      cutBtn.className = "py-2 px-1 rounded-lg text-[10px] sm:text-[11px] font-medium transition flex items-center justify-center gap-0.5 text-[var(--muted-foreground,#94a3b8)] hover:text-white truncate";
+      packBtn.className = "py-2 px-1 rounded-lg text-[10px] sm:text-[11px] font-medium transition flex items-center justify-center gap-0.5 text-[var(--muted-foreground,#94a3b8)] hover:text-white truncate";
+      if (devBtn) {
+        devBtn.className = "py-2 px-1 rounded-lg text-[10px] sm:text-[11px] font-medium transition flex items-center justify-center gap-0.5 text-[var(--muted-foreground,#94a3b8)] hover:text-white truncate";
+      }
 
       if (op === 'sewing') {
-        sewBtn.className = "py-2 px-1 rounded-lg text-[11px] font-bold transition flex items-center justify-center gap-1 bg-emerald-500 text-black shadow truncate";
+        sewBtn.className = "py-2 px-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition flex items-center justify-center gap-0.5 bg-emerald-500 text-black shadow truncate";
         hint.innerHTML = "🟢 Полностью готовые изделия (поступление на склад)";
         hint.className = "text-[11px] text-emerald-400/90 mt-1 pl-0.5";
         addBtn.className = "w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black font-extrabold text-xs sm:text-sm shadow-md active:scale-[0.99] transition flex items-center justify-center space-x-1.5";
         addBtnText.textContent = "+ Добавить в отчет (Пошив)";
+        if (devBlock) devBlock.classList.add('hidden');
       } else if (op === 'cutting') {
-        cutBtn.className = "py-2 px-1 rounded-lg text-[11px] font-bold transition flex items-center justify-center gap-1 bg-amber-500 text-black shadow truncate";
+        cutBtn.className = "py-2 px-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition flex items-center justify-center gap-0.5 bg-amber-500 text-black shadow truncate";
         hint.innerHTML = "🟡 Раскроенные детали и заготовки в работу";
         hint.className = "text-[11px] text-amber-400/90 mt-1 pl-0.5";
         addBtn.className = "w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-extrabold text-xs sm:text-sm shadow-md active:scale-[0.99] transition flex items-center justify-center space-x-1.5";
         addBtnText.textContent = "+ Добавить в отчет (Раскрой)";
-      } else {
-        packBtn.className = "py-2 px-1 rounded-lg text-[11px] font-bold transition flex items-center justify-center gap-1 bg-sky-500 text-black shadow truncate";
+        if (devBlock) devBlock.classList.add('hidden');
+      } else if (op === 'packing') {
+        packBtn.className = "py-2 px-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition flex items-center justify-center gap-0.5 bg-sky-500 text-black shadow truncate";
         hint.innerHTML = "🔵 ВТО, утюжка, отпаривание, бирки и упаковка в пакеты";
         hint.className = "text-[11px] text-sky-400/90 mt-1 pl-0.5";
         addBtn.className = "w-full py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-500 hover:from-sky-400 hover:to-blue-400 text-black font-extrabold text-xs sm:text-sm shadow-md active:scale-[0.99] transition flex items-center justify-center space-x-1.5";
         addBtnText.textContent = "+ Добавить в отчет (ВТО и Упаковка)";
+        if (devBlock) devBlock.classList.add('hidden');
+      } else if (op === 'development') {
+        if (devBtn) {
+          devBtn.className = "py-2 px-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition flex items-center justify-center gap-0.5 bg-purple-600 text-white shadow truncate";
+        }
+        hint.innerHTML = "🟣 Разработка новых моделей, построение выкроек, лекал и тестовые образцы";
+        hint.className = "text-[11px] text-purple-400/90 mt-1 pl-0.5";
+        addBtn.className = "w-full py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold text-xs sm:text-sm shadow-md active:scale-[0.99] transition flex items-center justify-center space-x-1.5";
+        addBtnText.textContent = "+ Добавить в отчет (Разработка)";
+        if (devBlock) devBlock.classList.remove('hidden');
       }
+      renderSizeButtons();
     }
 
     function setCategory(catKey) {
@@ -977,8 +1041,13 @@
     function renderSizeButtons() {
       const container = document.getElementById('sizeButtonsContainer');
       container.innerHTML = '';
-      const sizes = catalog[currentCategory].sizes;
-      currentSelectedSize = catalog[currentCategory].defaultSize;
+      let sizes = [...catalog[currentCategory].sizes];
+      if (currentOpType === 'development') {
+        sizes = ["Лекала", "База", ...sizes];
+      }
+      if (!sizes.includes(currentSelectedSize)) {
+        currentSelectedSize = sizes[0];
+      }
       document.getElementById('selectedSizeLabel').textContent = currentSelectedSize;
 
       sizes.forEach(sz => {
@@ -998,7 +1067,10 @@
     function selectSize(sz) {
       currentSelectedSize = sz;
       document.getElementById('selectedSizeLabel').textContent = sz;
-      const sizes = catalog[currentCategory].sizes;
+      let sizes = [...catalog[currentCategory].sizes];
+      if (currentOpType === 'development') {
+        sizes = ["Лекала", "База", ...sizes];
+      }
       sizes.forEach(s => {
         const b = document.getElementById(`sz-btn-${s}`);
         if (!b) return;
@@ -1031,15 +1103,23 @@
 
       if (!item) return;
       const qty = parseInt(document.getElementById('qtyInput').value) || 1;
-      
-      const existing = shiftItems.find(x => x.item === item && x.size === currentSelectedSize && x.op === currentOpType);
+      const devNotes = document.getElementById('devNotesInput')?.value?.trim() || "";
+
+      let displayItemName = item;
+      if (currentOpType === 'development' && devNotes) {
+        displayItemName = `${item} — ${devNotes}`;
+      }
+
+      const existing = shiftItems.find(x => x.item === displayItemName && x.size === currentSelectedSize && x.op === currentOpType);
       if (existing) {
         existing.qty += qty;
       } else {
         shiftItems.push({
           id: Date.now() + Math.random(),
-          category: isCustomItemMode ? "development" : currentCategory,
-          item: item,
+          category: (currentOpType === 'development' || isCustomItemMode) ? "development" : currentCategory,
+          item: displayItemName,
+          baseModel: item,
+          devNotes: devNotes,
           size: currentSelectedSize,
           qty: qty,
           op: currentOpType
@@ -1049,6 +1129,9 @@
       document.getElementById('qtyInput').value = 1;
       if (isCustomItemMode) {
         document.getElementById('customItemInput').value = '';
+      }
+      if (document.getElementById('devNotesInput')) {
+        document.getElementById('devNotesInput').value = '';
       }
 
       renderShiftList();
@@ -1075,12 +1158,16 @@
       const sewingTotal = shiftItems.filter(x => x.op === 'sewing').reduce((acc, x) => acc + x.qty, 0);
       const cuttingTotal = shiftItems.filter(x => x.op === 'cutting').reduce((acc, x) => acc + x.qty, 0);
       const packingTotal = shiftItems.filter(x => x.op === 'packing').reduce((acc, x) => acc + x.qty, 0);
+      const devTotal = shiftItems.filter(x => x.op === 'development').reduce((acc, x) => acc + x.qty, 0);
 
       document.getElementById('totalUnitsCount').textContent = totalCount;
       document.getElementById('shiftCountBadge').textContent = `${shiftItems.length} поз.`;
       document.getElementById('summarySewingQty').textContent = sewingTotal;
       document.getElementById('summaryCuttingQty').textContent = cuttingTotal;
       document.getElementById('summaryPackingQty').textContent = packingTotal;
+      if (document.getElementById('summaryDevQty')) {
+        document.getElementById('summaryDevQty').textContent = devTotal;
+      }
 
       const submitBtn = document.getElementById('submitShiftBtn');
       submitBtn.disabled = shiftItems.length === 0;
@@ -1103,8 +1190,10 @@
           opBadge = '<span class="bg-emerald-500/20 text-emerald-400 px-1 py-0.5 rounded text-[9px] font-bold">ПОШИВ</span>';
         } else if (x.op === 'cutting') {
           opBadge = '<span class="bg-amber-400/20 text-amber-300 px-1 py-0.5 rounded text-[9px] font-bold">РАСКРОЙ</span>';
-        } else {
+        } else if (x.op === 'packing') {
           opBadge = '<span class="bg-sky-500/20 text-sky-300 px-1 py-0.5 rounded text-[9px] font-bold">ВТО/УПАК</span>';
+        } else if (x.op === 'development') {
+          opBadge = '<span class="bg-purple-500/20 text-purple-300 border border-purple-500/30 px-1 py-0.5 rounded text-[9px] font-bold">РАЗРАБОТКА</span>';
         }
 
         row.innerHTML = `
@@ -1126,61 +1215,137 @@
       });
     }
 
+    async function sendShiftToTelegram(shiftData) {
+      const dateVal = shiftData.date;
+      const jsonPayload = JSON.stringify(shiftData);
+
+      // Official Telegram WebApp bridge (Tokenless, Secure)
+      if (window.Telegram && window.Telegram.WebApp) {
+        try { 
+          window.Telegram.WebApp.sendData(jsonPayload); 
+        } catch(e) {
+          console.warn("WebApp sendData:", e);
+        }
+      }
+
+      try {
+        localStorage.setItem("nd_synced_" + dateVal, "true");
+      } catch(e) {}
+    }
+
+    async function syncStoredShifts() {
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith("nd_shift_closed_")) {
+            const dateVal = key.replace("nd_shift_closed_", "");
+            const isSynced = localStorage.getItem("nd_synced_" + dateVal);
+            if (!isSynced) {
+              const raw = localStorage.getItem(key);
+              if (raw) {
+                const shift = JSON.parse(raw);
+                let items = [];
+                const detailedRaw = localStorage.getItem("nd_shift_items_" + dateVal);
+                if (detailedRaw) {
+                  try { items = JSON.parse(detailedRaw); } catch(e){}
+                }
+                if (items.length === 0) {
+                  if (shift.sewing > 0) items.push({ op: "sewing", name: "Изделия (пошив)", size: "Стандарт", qty: shift.sewing, category: "clothes" });
+                  if (shift.cutting > 0) items.push({ op: "cutting", name: "Детали (раскрой)", size: "Стандарт", qty: shift.cutting, category: "clothes" });
+                  if (shift.packing > 0) items.push({ op: "packing", name: "Изделия (ВТО)", size: "Стандарт", qty: shift.packing, category: "clothes" });
+                  if (shift.dev > 0) items.push({ op: "development", name: "Разработка (лекала)", size: "Лекала", qty: shift.dev, category: "development" });
+                }
+
+                const payload = {
+                  action: "submit_shift",
+                  date: dateVal,
+                  seamstress: shift.seamstress || activeMasterName,
+                  items: items,
+                  completed_tasks: [],
+                  sewing_units: shift.sewing || 0,
+                  cutting_units: shift.cutting || 0,
+                  packing_units: shift.packing || 0,
+                  dev_units: shift.dev || 0,
+                  total_sewing: shift.sewing || 0,
+                  total_cutting: shift.cutting || 0,
+                  total_packing: shift.packing || 0,
+                  total_development: shift.dev || 0
+                };
+                await sendShiftToTelegram(payload);
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.error("syncStoredShifts error:", e);
+      }
+    }
+
     function submitShiftToTest() {
       if (shiftItems.length === 0) return;
 
-      const dateVal = document.getElementById('shiftDateInput').value;
-      const sewingTotal = shiftItems.filter(x => x.op === 'sewing').reduce((acc, x) => acc + x.qty, 0);
-      const cuttingTotal = shiftItems.filter(x => x.op === 'cutting').reduce((acc, x) => acc + x.qty, 0);
-      const packingTotal = shiftItems.filter(x => x.op === 'packing').reduce((acc, x) => acc + x.qty, 0);
+      const dateVal = document.getElementById("shiftDateInput").value;
+      const sewingTotal = shiftItems.filter(x => x.op === "sewing").reduce((acc, x) => acc + x.qty, 0);
+      const cuttingTotal = shiftItems.filter(x => x.op === "cutting").reduce((acc, x) => acc + x.qty, 0);
+      const packingTotal = shiftItems.filter(x => x.op === "packing").reduce((acc, x) => acc + x.qty, 0);
+      const devTotal = shiftItems.filter(x => x.op === "development").reduce((acc, x) => acc + x.qty, 0);
 
-      // Save lockout in localStorage
       try {
-        localStorage.setItem('nd_shift_closed_' + dateVal, JSON.stringify({
+        localStorage.setItem("nd_shift_closed_" + dateVal, JSON.stringify({
           date: dateVal,
           seamstress: activeMasterName,
           sewing: sewingTotal,
           cutting: cuttingTotal,
           packing: packingTotal,
+          dev: devTotal,
           itemsCount: shiftItems.length
         }));
+        localStorage.setItem("nd_shift_items_" + dateVal, JSON.stringify(shiftItems));
       } catch (e) {}
 
-      document.getElementById('modalDocNumber').textContent = `Смена за ${dateVal.split('-').reverse().join('.')} успешно сдана.`;
-      document.getElementById('modalSeamstress').textContent = activeMasterName;
-      document.getElementById('modalSewingUnits').textContent = sewingTotal + ' шт';
-      document.getElementById('modalCuttingUnits').textContent = cuttingTotal + ' шт';
-      document.getElementById('modalPackingUnits').textContent = packingTotal + ' шт';
-
-      document.getElementById('successModal').classList.remove('hidden');
-
-      // Send data to Telegram Bot
-      if (window.Telegram && window.Telegram.WebApp) {
-        window.Telegram.WebApp.sendData(JSON.stringify({
-          action: "submit_shift",
-          date: dateVal,
-          seamstress: activeMasterName,
-          items: shiftItems.map(x => ({
-            category: x.category,
-            name: x.item,
-            size: x.size,
-            qty: x.qty,
-            op: x.op,
-            from_task_id: x.from_task_id || null
-          })),
-          completed_tasks: assignedTasks.filter(t => t.targetMaster === activeMasterName && t.doneQty > 0).map(t => ({
-            task_id: t.id,
-            item: t.item,
-            size: t.size,
-            doneQty: t.doneQty,
-            targetQty: t.targetQty,
-            isCompleted: t.doneQty >= t.targetQty
-          })),
-          sewing_units: sewingTotal,
-          cutting_units: cuttingTotal,
-          packing_units: packingTotal
-        }));
+      document.getElementById("modalDocNumber").textContent = "Смена за " + dateVal.split("-").reverse().join(".") + " успешно сдана.";
+      document.getElementById("modalSeamstress").textContent = activeMasterName;
+      document.getElementById("modalSewingUnits").textContent = sewingTotal + " шт";
+      document.getElementById("modalCuttingUnits").textContent = cuttingTotal + " шт";
+      document.getElementById("modalPackingUnits").textContent = packingTotal + " шт";
+      if (document.getElementById("modalDevUnits")) {
+        document.getElementById("modalDevUnits").textContent = devTotal + " шт";
       }
+
+      document.getElementById("successModal").classList.remove("hidden");
+
+      const payload = {
+        action: "submit_shift",
+        date: dateVal,
+        seamstress: activeMasterName,
+        role: currentUserRole,
+        items: shiftItems.map(x => ({
+          category: x.category,
+          name: x.item,
+          size: x.size,
+          qty: x.qty,
+          op: x.op,
+          from_task_id: x.from_task_id || null
+        })),
+        completed_tasks: assignedTasks.filter(t => t.targetMaster === activeMasterName && t.doneQty > 0).map(t => ({
+          task_id: t.id,
+          item: t.item,
+          size: t.size,
+          doneQty: t.doneQty,
+          targetQty: t.targetQty,
+          isCompleted: t.doneQty >= t.targetQty
+        })),
+        sewing_units: sewingTotal,
+        cutting_units: cuttingTotal,
+        packing_units: packingTotal,
+        dev_units: devTotal,
+        total_sewing: sewingTotal,
+        total_cutting: cuttingTotal,
+        total_packing: packingTotal,
+        total_development: devTotal
+      };
+
+      sendShiftToTelegram(payload);
     }
 
     function closeTelegramApp() {
@@ -1243,6 +1408,9 @@
           document.getElementById('closedSewingTotal').textContent = (shift.sewing || 0) + ' шт';
           document.getElementById('closedCuttingTotal').textContent = (shift.cutting || 0) + ' шт';
           document.getElementById('closedPackingTotal').textContent = (shift.packing || 0) + ' шт';
+          if (document.getElementById('closedDevTotal')) {
+            document.getElementById('closedDevTotal').textContent = (shift.dev || 0) + ' шт';
+          }
           
           document.getElementById('shiftClosedScreen').classList.remove('hidden');
           return true;
@@ -1260,6 +1428,7 @@
     setCategory('clothes');
     renderShiftList();
     checkShiftLock();
+    syncStoredShifts();
 
     // Auto-open Manager Task creation view if requested via URL
     if (urlParams.get('create_task') === '1') {
