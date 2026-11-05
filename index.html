@@ -1199,6 +1199,11 @@
     setCategory('clothes');
     renderShiftList();
     checkShiftLock();
+
+    // Auto-open Manager Task creation view if requested via URL
+    if (urlParams.get('create_task') === '1') {
+      toggleManagerTaskView();
+    }
   </script>
 </body>
 </html>
