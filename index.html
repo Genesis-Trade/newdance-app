@@ -1341,9 +1341,21 @@
 
       document.getElementById("successModal").classList.remove("hidden");
 
-      // Set fallback Telegram link for browser/Safari mode
-      const cmdDate = dateVal.split("-").slice(1).reverse().join(".");
-      const cmdText = `/add_shift ${cmdDate} ${sewingTotal} ${cuttingTotal} ${packingTotal} ${devTotal}`;
+      // Set fallback Telegram link with full items payload
+      const itemsPayload = shiftItems.map(x => ({
+        op: x.op,
+        name: x.item || x.name,
+        size: x.size,
+        qty: x.qty,
+        category: x.category || "clothes"
+      }));
+      const payloadObj = {
+        action: "submit_shift",
+        date: dateVal,
+        seamstress: activeMasterName,
+        items: itemsPayload
+      };
+      const cmdText = "#SUBMIT_SHIFT " + JSON.stringify(payloadObj);
       const fallbackBtn = document.getElementById("modalFallbackTgBtn");
       const fallbackBlock = document.getElementById("modalFallbackTgBlock");
       if (fallbackBtn && fallbackBlock) {
@@ -1492,34 +1504,70 @@
       list.innerHTML = '';
 
       foundShifts.forEach(s => {
-        const dDisp = (s.date || "").split("-").reverse().join(".");
+        const dateVal = s.date || "";
+        const dDisp = dateVal.split("-").reverse().join(".");
         const sew = s.sewing || 0;
         const cut = s.cutting || 0;
         const pack = s.packing || 0;
         const dev = s.dev || 0;
-        
-        const cmdDate = (s.date || "").split("-").slice(1).reverse().join(".");
-        const cmdText = `/add_shift ${cmdDate} ${sew} ${cut} ${pack} ${dev}`;
-        const tgUrl = `https://t.me/newdance_workshop_bot?text=${encodeURIComponent(cmdText)}`;
+
+        let detailedItems = [];
+        const rawItems = localStorage.getItem("nd_shift_items_" + dateVal);
+        if (rawItems) {
+          try { detailedItems = JSON.parse(rawItems); } catch(e){}
+        }
+
+        let tgUrl = "";
+        let itemsSummaryText = "";
+
+        if (detailedItems.length > 0) {
+          const itemsPayload = detailedItems.map(x => ({
+            op: x.op,
+            name: x.item || x.name,
+            size: x.size,
+            qty: x.qty,
+            category: x.category || "clothes"
+          }));
+          const payload = {
+            action: "submit_shift",
+            date: dateVal,
+            seamstress: s.seamstress || activeMasterName,
+            items: itemsPayload
+          };
+          const msgText = "#SUBMIT_SHIFT " + JSON.stringify(payload);
+          tgUrl = `https://t.me/newdance_workshop_bot?text=${encodeURIComponent(msgText)}`;
+
+          itemsSummaryText = detailedItems.map(x => {
+            const icon = x.op === 'sewing' ? '🟢' : (x.op === 'cutting' ? '🟡' : (x.op === 'packing' ? '🔵' : '🟣'));
+            return `${icon} ${x.item || x.name} (${x.size}): ${x.qty} шт`;
+          }).join(', ');
+        } else {
+          const cmdDate = dateVal.split("-").slice(1).reverse().join(".");
+          const cmdText = `/add_shift ${cmdDate} ${sew} ${cut} ${pack} ${dev}`;
+          tgUrl = `https://t.me/newdance_workshop_bot?text=${encodeURIComponent(cmdText)}`;
+        }
 
         const row = document.createElement('div');
-        row.className = "flex items-center justify-between bg-slate-900/90 border border-slate-700/60 rounded-xl p-2";
+        row.className = "bg-slate-900/90 border border-slate-700/60 rounded-xl p-2.5 space-y-1.5";
         row.innerHTML = `
-          <div class="min-w-0 pr-2">
-            <div class="font-bold text-white text-xs flex items-center gap-1.5">
-              <span>📅 ${dDisp}</span>
-              <span class="text-[10px] text-slate-400 font-normal">(${s.seamstress || 'Мастер'})</span>
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-bold text-white text-xs flex items-center gap-1.5">
+                <span>📅 ${dDisp}</span>
+                <span class="text-[10px] text-slate-400 font-normal">(${s.seamstress || 'Мастер'})</span>
+              </div>
+              <div class="text-[10px] text-slate-300 mt-0.5 space-x-1.5">
+                <span class="text-emerald-400 font-medium">🟢 Пошив: ${sew} шт</span>
+                <span class="text-amber-300 font-medium">🟡 Крой: ${cut} шт</span>
+                <span class="text-sky-300 font-medium">🔵 ВТО: ${pack} шт</span>
+                ${dev > 0 ? `<span class="text-purple-300 font-medium">🟣 Разраб: ${dev} шт</span>` : ''}
+              </div>
             </div>
-            <div class="text-[10px] text-slate-300 mt-0.5 space-x-1.5">
-              <span class="text-emerald-400">🟢 ${sew} шт</span>
-              <span class="text-amber-300">🟡 ${cut} шт</span>
-              <span class="text-sky-300">🔵 ${pack} шт</span>
-              ${dev > 0 ? `<span class="text-purple-300">🟣 ${dev} шт</span>` : ''}
-            </div>
+            <a href="${tgUrl}" target="_blank" class="flex-shrink-0 bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-[11px] px-2.5 py-1.5 rounded-lg transition shadow flex items-center gap-1">
+              <span>🚀 В бот</span>
+            </a>
           </div>
-          <a href="${tgUrl}" target="_blank" class="flex-shrink-0 bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-[11px] px-2.5 py-1.5 rounded-lg transition shadow flex items-center gap-1">
-            <span>🚀 В бот</span>
-          </a>
+          ${itemsSummaryText ? `<div class="text-[10px] text-slate-400 bg-slate-950/60 p-1.5 rounded-lg border border-slate-800 leading-relaxed">${itemsSummaryText}</div>` : ''}
         `;
         list.appendChild(row);
       });
