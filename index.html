@@ -538,21 +538,21 @@
       </div>
       
       <p class="text-[11px] text-amber-300/80">
-        Смена зафиксирована. Данные переданы в систему цеха New Dance.
+        Смена сохранена на устройстве. Чтобы передать её в базу цеха, нажмите кнопку ниже:
       </p>
 
-      <!-- Fallback button for Safari / browser mode -->
-      <div id="modalFallbackTgBlock" class="space-y-1.5 pt-1 hidden">
-        <a id="modalFallbackTgBtn" href="#" target="_blank" class="w-full py-2.5 bg-sky-500 hover:bg-sky-400 text-white font-extrabold rounded-xl transition text-xs shadow-lg shadow-sky-500/20 flex items-center justify-center space-x-1.5">
-          <span>🚀 Отправить отчет в Telegram-бот</span>
-        </a>
+      <!-- Primary submit button for all modes (Telegram WebApp & Browser) -->
+      <div id="modalFallbackTgBlock" class="space-y-1.5 pt-1">
+        <button id="modalFallbackTgBtn" type="button" class="w-full py-3 bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-black font-black rounded-xl transition text-xs sm:text-sm shadow-lg shadow-amber-500/20 flex items-center justify-center space-x-1.5">
+          <span>🚀 Передать смену в бот цеха</span>
+        </button>
         <p class="text-[10px] text-slate-400 leading-tight">
-          Если вы открыли журнал через браузер (Safari), нажмите кнопку выше для отправки в базу цеха.
+          Данные со всеми моделями и размерами поступят в сводку руководителя.
         </p>
       </div>
 
-      <button onclick="closeTelegramApp()" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-black font-extrabold rounded-xl transition text-sm shadow-lg shadow-amber-500/20 flex items-center justify-center space-x-2">
-        <span>Закрыть приложение</span>
+      <button onclick="closeTelegramApp()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition text-xs flex items-center justify-center space-x-2">
+        <span>Закрыть окно</span>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
       </button>
     </div>
@@ -1242,6 +1242,14 @@
       });
     }
 
+    function openTelegramDeepLink(url) {
+      if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
+        window.Telegram.WebApp.openTelegramLink(url);
+      } else {
+        window.location.href = url;
+      }
+    }
+
     async function sendShiftToTelegram(shiftData) {
       const dateVal = shiftData.date;
       const jsonPayload = JSON.stringify(shiftData);
@@ -1356,15 +1364,15 @@
         items: itemsPayload
       };
       const cmdText = "#SUBMIT_SHIFT " + JSON.stringify(payloadObj);
+      const tgDeepLink = `https://t.me/newdance_workshop_bot?text=${encodeURIComponent(cmdText)}`;
       const fallbackBtn = document.getElementById("modalFallbackTgBtn");
       const fallbackBlock = document.getElementById("modalFallbackTgBlock");
       if (fallbackBtn && fallbackBlock) {
-        fallbackBtn.href = `https://t.me/newdance_workshop_bot?text=${encodeURIComponent(cmdText)}`;
-        if (!window.Telegram?.WebApp?.initData) {
-          fallbackBlock.classList.remove("hidden");
-        } else {
-          fallbackBlock.classList.add("hidden");
-        }
+        fallbackBtn.onclick = function(e) {
+          e.preventDefault();
+          openTelegramDeepLink(tgDeepLink);
+        };
+        fallbackBlock.classList.remove("hidden");
       }
 
       const payload = {
@@ -1563,9 +1571,9 @@
                 ${dev > 0 ? `<span class="text-purple-300 font-medium">🟣 Разраб: ${dev} шт</span>` : ''}
               </div>
             </div>
-            <a href="${tgUrl}" target="_blank" class="flex-shrink-0 bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-[11px] px-2.5 py-1.5 rounded-lg transition shadow flex items-center gap-1">
+            <button type="button" onclick="openTelegramDeepLink('${tgUrl}')" class="flex-shrink-0 bg-amber-500 hover:bg-amber-400 active:scale-95 text-black font-extrabold text-[11px] px-2.5 py-1.5 rounded-lg transition shadow flex items-center gap-1 cursor-pointer">
               <span>🚀 В бот</span>
-            </a>
+            </button>
           </div>
           ${itemsSummaryText ? `<div class="text-[10px] text-slate-400 bg-slate-950/60 p-1.5 rounded-lg border border-slate-800 leading-relaxed">${itemsSummaryText}</div>` : ''}
         `;
